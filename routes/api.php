@@ -38,10 +38,10 @@ Route::apiResource('/kamar_units', KamarUnitsController::class);
 Route::post('/register', [ApiAuthController::class, 'register']);
 Route::post('/login', [ApiAuthController::class, 'login']);
 Route::apiResource('kamar', KamarController::class);
-Route::middleware('auth:sanctum','role:customer')->group(function () {
+Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
     Route::put('/profil', [ProfileController::class, 'update']);
-    Route::get('/pemesanan/{pemesanan}', [PemesananController::class, 'show']); 
-    Route::get('/pemesanan', [PemesananController::class, 'index']); 
+    Route::get('/pemesanan/{pemesanan}', [PemesananController::class, 'show']);
+    Route::get('/pemesanan', [PemesananController::class, 'index']);
     Route::post('/pemesanan', [PemesananController::class, 'store']);
     Route::post('/pemesanan/{pemesanan}/pembayaran', [PembayaranController::class, 'store']);
     Route::post('/review', [ReviewController::class, 'store']);
@@ -65,7 +65,7 @@ Route::post('/promo/validate', [PromoController::class, 'validatePromo']);
 //     Route::post('/content/homepage/update', 'update')->name('content.homepage.update');
 // });
 Route::get('/content/homepage', [HomestayContentController::class, 'show']);
- 
+
 Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     Route::post('/content/homepage/update', [HomestayContentController::class, 'update']);
     Route::get('/admin/pemesanan/{pemesanan}', [PemesananController::class, 'showForOwner']); // <-- Tambahkan ini
@@ -78,7 +78,7 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
 
 });
 Route::get('/laporan', [LaporanController::class, 'index']);
-Route::middleware(['auth:sanctum','role:owner'])->group(function(){
+Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     Route::get('/admin/promo/{promo}', [PromoController::class, 'showForOwner']); // <-- Tambahkan ini
     Route::get('/admin/promo/{promo}', [PromoController::class, 'indexby']); // <-- Tambahkan ini
     Route::get('/admin/promo', [PromoController::class, 'index']); // <-- Tambahkan ini
