@@ -39,6 +39,6 @@ class DetailPemesanan extends Model
 public function penempatanKamars()
     {
         // Pastikan nama model 'PenempatanKamar' benar
-        return $this->hasMany(penempatan_kamar::class, 'detail_pemesanan_id', 'id');
+        return $this->hasMany(PenempatanKamar::class, 'detail_pemesanan_id', 'id');
     }
 }

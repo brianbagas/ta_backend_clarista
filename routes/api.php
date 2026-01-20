@@ -33,7 +33,6 @@ Route::get('/review/latest', [ReviewController::class, 'getFeaturedReviews']);
 
 Route::get('/review', [ReviewController::class, 'index']);
 Route::apiResource('review', ReviewController::class);
-Route::apiResource('kamar', KamarController::class);
 // routes/api.php
 Route::apiResource('/kamar_units', KamarUnitsController::class);
 Route::post('/register', [ApiAuthController::class, 'register']);
@@ -99,41 +98,8 @@ Route::middleware(['auth:sanctum','role:owner'])->group(function(){
 
 Route::get('/cek-ketersediaan', [KamarController::class, 'cekKetersediaan']);
 
-Route::get('/kirim-tes', function () {
-    try {
-        Mail::raw('Halo! Jika Anda membaca ini, berarti setting Gmail di Laravel Skripsi BERHASIL.', function ($message) {
-            $message->to('elnka96@gmail.com') // Ganti dengan email penerima (bisa email sendiri)
-                    ->subject('Tes Koneksi Gmail Laravel');
-        });
-        
-        return 'Email berhasil dikirim! Cek inbox Anda.';
-    } catch (\Exception $e) {
-        return 'Gagal mengirim email: ' . $e->getMessage();
-    }
-});
 
 
-Route::get('/cek-token', function (Request $request) {
-    return response()->json([
-        'headers' => $request->headers->all(), // Lihat apa yang diterima server
-        'user' => $request->user('sanctum'),   // Coba ambil user paksa via sanctum
-        'token_valid' => auth('sanctum')->check() // True/False
-    ]);
-});
+
+
 Route::post('/cek-promo', [PromoController::class, 'checkPromo']);
-Route::middleware('auth:sanctum')->get('/cek-role-asli', function (Request $request) {
-    $user = $request->user();
-    
-    return response()->json([
-        'id' => $user->id,
-        'nama' => $user->name,
-        // Cek 1: Apa isi kolom role sebenarnya?
-        'role_di_database' => $user->role, 
-        // Cek 2: Apakah ada spasi tersembunyi? (Misal: "customer " beda dengan "customer")
-        'panjang_string_role' => strlen($user->role),
-        // Cek 3: Logika pembanding
-        'apakah_role_customer?' => ($user->role === 'customer'),
-        // Cek 4: Apakah pakai role_id (angka)?
-        'role_id' => $user->role_id ?? 'Tidak ada kolom role_id',
-    ]);
-});
