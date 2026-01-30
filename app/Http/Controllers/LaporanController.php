@@ -70,30 +70,41 @@ class LaporanController extends Controller
 
     public function index(Request $request)
     {
-        // 1. Ambil input filter (Default: Bulan ini)
-        $bulan = $request->input('bulan', date('m'));
-        $tahun = $request->input('tahun', date('Y'));
+        // 1. Ambil input filter (Prioritas: Date Range, Fallback: Bulan ini)
+        if ($request->has(['start_date', 'end_date'])) {
+            $startDate = Carbon::parse($request->start_date)->startOfDay();
+            $endDate = Carbon::parse($request->end_date)->endOfDay();
+            $periodeLabel = $startDate->translatedFormat('d M Y') . ' - ' . $endDate->translatedFormat('d M Y');
+        } else {
+            $bulan = $request->input('bulan', date('m'));
+            $tahun = $request->input('tahun', date('Y'));
+            $startDate = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth();
+            $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
+            $periodeLabel = $startDate->translatedFormat('F Y');
+        }
 
         // 2. Query Dasar
+        // Filter berdasarkan TANGGAL BAYAR (Cashflow)
         $query = Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'selesai'])
-            ->whereMonth('tanggal_check_in', $bulan)
-            ->whereYear('tanggal_check_in', $tahun);
+            ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('tanggal_bayar', [$startDate, $endDate]);
+            });
 
         // 3. Hitung Agregasi
         $totalPendapatan = $query->sum('total_bayar');
         $jumlahTransaksi = $query->count();
 
         // 4. Ambil Detail Transaksi
-        $detailTransaksi = $query->with('user')->orderBy('tanggal_check_in', 'asc')->get();
+        $detailTransaksi = $query->with(['user', 'pembayaran'])->orderBy('tanggal_check_in', 'asc')->get();
 
         return $this->successResponse([
             'summary' => [
                 'total_pendapatan' => (int) $totalPendapatan,
                 'total_transaksi' => $jumlahTransaksi,
-                'periode' => Carbon::createFromDate($tahun, $bulan)->translatedFormat('F Y')
+                'periode' => $periodeLabel
             ],
             'transaksi' => $detailTransaksi
-        ], "Laporan periode $bulan-$tahun berhasil diambil");
+        ], "Laporan periode $periodeLabel berhasil diambil");
     }
     public function dashboard(Request $request)
     {

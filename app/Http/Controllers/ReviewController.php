@@ -27,7 +27,7 @@ class ReviewController extends Controller
 
     public function getFeaturedReviews()
     {
-        $reviews = Review::where('status', 'disetujui')
+        $reviews = Review::where('status', 'setujui')
             ->with('pemesanan.user')
             ->latest()
             ->take(9)
@@ -40,7 +40,7 @@ class ReviewController extends Controller
      */
     public function index()
     {
-        $reviews = Review::where('status', 'disetujui')
+        $reviews = Review::where('status', 'setujui')
             ->with('pemesanan.user')
             ->latest()
             ->get();
@@ -69,14 +69,14 @@ class ReviewController extends Controller
 
     public function indexForOwner()
     {
-        $reviews = Review::with('user')->latest()->get();
+        $reviews = Review::with('pemesanan.user')->latest()->get();
         return $this->successResponse($reviews, 'Daftar review untuk owner berhasil ditampilkan.');
     }
 
     public function updateStatus(Request $request, Review $review)
     {
         $validated = $request->validate([
-            'status' => 'required|in:disetujui,disembunyikan',
+            'status' => 'required|in:setujui,sembunyikan',
         ]);
 
         $review->update(['status' => $validated['status']]);
@@ -154,7 +154,13 @@ class ReviewController extends Controller
      */
     public function update(Request $request, Review $review)
     {
-        //
+        $validated = $request->validate([
+            'status' => 'required|in:setujui,sembunyikan',
+        ]);
+
+        $review->update(['status' => $validated['status']]);
+
+        return $this->successResponse($review, 'Status review berhasil diperbarui.');
     }
 
     /**

@@ -31,7 +31,7 @@ class PemesananController extends Controller
 
         // Ambil pemesanan milik user, urutkan dari yang terbaru dengan relasinya
         $pemesanans = $user->pemesanans()
-            ->with(['detailPemesanans.kamar.images'])
+            ->with(['detailPemesanans.kamar.images', 'review'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -213,7 +213,7 @@ class PemesananController extends Controller
     public function indexOwner()
     {
         // Ambil semua pemesanan owner
-        $pemesanans = Pemesanan::with('user')
+        $pemesanans = Pemesanan::with(['user', 'detailPemesanans.penempatanKamars'])
             ->latest()
             ->get();
 
