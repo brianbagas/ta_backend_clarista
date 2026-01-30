@@ -13,8 +13,7 @@ return new class extends Migration
     {
         Schema::create('reviews', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('pemesanan_id')->unique()->constrained('pemesanans'); // 1 pesanan hanya bisa punya 1 review
-            $table->foreignId('user_id')->constrained('users');
+            $table->foreignUlid('pemesanan_id')->unique()->constrained('pemesanans'); // 1 pesanan hanya bisa punya 1 review
             $table->unsignedTinyInteger('rating'); // Rating 1-5
             $table->text('komentar')->nullable();
             $table->string('status')->default('menunggu_persetujuan');

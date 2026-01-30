@@ -3,7 +3,8 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\KamarController;
 use Illuminate\Support\Facades\Route;
-
+use App\Models\Pemesanan;
+use App\Mail\PesananDikonfirmasi;
 // Route::get('/', function () {
 //     return view('welcome');
 // });
@@ -18,6 +19,20 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::apiResource('kamar', KamarController::class);
     
+});
+
+Route::get('/preview-email', function () {
+    
+    // Ambil 1 data pesanan yang statusnya 'dikonfirmasi' atau data pertama saja
+    // Pastikan pakai 'with' agar relasi ke user dan kamar tidak error
+    $pemesanan = Pemesanan::with(['user', 'detailPemesanans.kamar'])->first();
+
+    if (!$pemesanan) {
+        return "Belum ada data pemesanan di database. Buat 1 dulu via Postman/Web!";
+    }
+
+    // Tampilkan email langsung di browser
+    return new PesananDikonfirmasi($pemesanan);
 });
 
 

@@ -8,8 +8,12 @@ use App\Models\Pemesanan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PesananDikonfirmasi;
+use App\Traits\ApiResponseTrait;
+
 class PembayaranController extends Controller
 {
+    use ApiResponseTrait;
+
     /**
      * Display a listing of the resource.
      */
@@ -18,17 +22,17 @@ class PembayaranController extends Controller
         //
     }
 
-     public function indexForOwner()
+    public function indexForOwner()
     {
         $pemesanans = Pemesanan::where('status_pemesanan', 'menunggu_konfirmasi')
-            ->with(['user', 'pembayaran', 'detailPemesanans.kamar'])// Muat relasi user dan pembayaran
+            ->with(['user', 'pembayaran', 'detailPemesanans.kamar'])
             ->latest()
             ->get();
 
-        return response()->json($pemesanans);
+        return $this->successResponse($pemesanans, 'Daftar pembayaran menunggu konfirmasi berhasil ditampilkan.');
     }
 
-     public function verifikasi(Request $request, Pemesanan $pemesanan)
+    public function verifikasi(Request $request, Pemesanan $pemesanan)
     {
         $validated = $request->validate([
             'status' => 'required|in:dikonfirmasi,batal',
@@ -38,13 +42,9 @@ class PembayaranController extends Controller
 
         // Kirim notifikasi email ke customer
         if ($pemesanan->user && $pemesanan->user->email) {
-
             Mail::to($pemesanan->user->email)->send(new PesananDikonfirmasi($pemesanan));
         }
-        return response()->json([
-            'message' => 'Status pemesanan berhasil diubah menjadi ' . $validated['status'],
-            'pemesanan' => $pemesanan,
-        ]);
+        return $this->successResponse($pemesanan, 'Status pemesanan berhasil diubah menjadi ' . $validated['status']);
     }
 
     /**
@@ -60,30 +60,50 @@ class PembayaranController extends Controller
      */
     public function store(Request $request, Pemesanan $pemesanan)
     {
-        // 1. Otorisasi: Pastikan pengguna adalah pemilik pesanan
+        // 1. Otorisasi
         if (Auth::id() !== $pemesanan->user_id) {
-            return response()->json(['message' => 'Akses ditolak.'], 403);
+            return $this->errorResponse('Akses ditolak.', 403);
         }
 
-        // 2. Validasi: Pastikan ada file gambar yang diunggah
+        if ($pemesanan->status_pemesanan !== 'menunggu_pembayaran') {
+            return $this->errorResponse('Pembayaran tidak dapat diproses untuk status pesanan ini.', 400);
+        }
+
+        // 2. Validasi
         $validated = $request->validate([
             'bukti_bayar' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'jumlah_bayar' => 'required|numeric|min:0',
+            'bank_tujuan' => 'nullable|string|max:50',
+            'nama_pengirim' => 'nullable|string|max:100',
+            'tanggal_bayar' => 'nullable|date',
         ]);
-        // 3. Simpan File Bukti Bayar
-        $path = $request->file('bukti_bayar')->store('bukti_pembayaran','public');
-        
-        // 4. Buat record pembayaran baru
+
+        // 3. Validasi jumlah bayar
+        if ($validated['jumlah_bayar'] != $pemesanan->total_bayar) {
+            return $this->errorResponse(
+                'Jumlah pembayaran tidak sesuai. Harap transfer sejumlah Rp ' .
+                number_format($pemesanan->total_bayar, 0, ',', '.'),
+                422
+            );
+        }
+
+        // 4. Simpan File Bukti Bayar
+        $path = $request->file('bukti_bayar')->store('bukti_pembayaran', 'public');
+
+        // 5. Buat record pembayaran baru dengan detail lengkap
         Pembayaran::create([
             'pemesanan_id' => $pemesanan->id,
             'bukti_bayar_path' => $path,
+            'jumlah_bayar' => $validated['jumlah_bayar'],
+            'bank_tujuan' => $validated['bank_tujuan'],
+            'nama_pengirim' => $validated['nama_pengirim'],
+            'tanggal_bayar' => $validated['tanggal_bayar'],
         ]);
 
-        // 5. Update status pesanan utama
+        // 6. Update status pesanan utama
         $pemesanan->update(['status_pemesanan' => 'menunggu_konfirmasi']);
 
-        return response()->json([
-            'message' => 'Bukti pembayaran berhasil diunggah. Menunggu konfirmasi dari admin.',
-        ], 200);
+        return $this->successResponse(null, 'Bukti pembayaran berhasil diunggah. Menunggu konfirmasi dari admin.', 200);
     }
 
     /**
@@ -116,5 +136,11 @@ class PembayaranController extends Controller
     public function destroy(Pembayaran $pembayaran)
     {
         //
+    }
+
+    public function getPembayaranNotifikasi()
+    {
+        $pembayaran = Pemesanan::where('status_pemesanan', 'menunggu_konfirmasi')->count();
+        return $this->successResponse($pembayaran, 'Jumlah pesanan menunggu konfirmasi berhasil ditampilkan.');
     }
 }

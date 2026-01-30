@@ -23,7 +23,12 @@ class HandleExpiredBookings extends Command
         foreach ($expiredBookings as $booking) {
             DB::transaction(function () use ($booking) {
                 // 1. Ubah status jadi Batal
-                $booking->update(['status_pemesanan' => 'batal']);
+                $booking->update([
+                    'status_pemesanan' => 'batal',
+                    'dibatalkan_oleh' => 'system',
+                    'dibatalkan_at' => now(),
+                    'catatan' => 'Otomatis dibatalkan oleh sistem (Expired)'
+                ]);
 
                 // 2. KEMBALIKAN KUOTA PROMO (Decrement)
                 if ($booking->promo_id) {
@@ -34,18 +39,21 @@ class HandleExpiredBookings extends Command
                 // Agar kamar bisa dibooking orang lain lagi
                 // $booking->detailPemesanans->each(function($detail){ ... });
                 $booking->detailPemesanans->each(function ($detail) {
-                
-                // Update status semua unit yang terkait dengan detail ini menjadi 'cancelled'
-                // Pastikan kolom 'status_penempatan' ada di tabel penempatan_kamars
-                $detail->penempatanKamars()->update([
-                    'status_penempatan' => 'cancelled' 
-                ]);
 
-                // ALTERNATIF: Jika Anda lebih suka menghapus datanya (Hard Delete)
-                // $detail->penempatanKamars()->delete();
+                    // Update status semua unit yang terkait dengan detail ini menjadi 'cancelled'
+                    // Pastikan kolom 'status_penempatan' ada di tabel penempatan_kamars
+                    $detail->penempatanKamars()->update([
+                        'status_penempatan' => 'cancelled',
+                        'catatan' => 'Dibatalkan otomatis oleh sistem (Expired)',
+                        'dibatalkan_oleh' => 'system'
+                    ]);
+
+                    // ALTERNATIF: Jika Anda lebih suka menghapus datanya (Hard Delete)
+                    // $detail->penempatanKamars()->delete();
+                });
+
             });
-                $this->info("Booking ID {$booking->id} dibatalkan & kuota dikembalikan.");
-            });
+            $this->info("Booking ID {$booking->id} dibatalkan & kuota dikembalikan.");
         }
     }
 }

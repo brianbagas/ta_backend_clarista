@@ -2,8 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Mail;
-// routes/api.php
 use App\Http\Controllers\KamarController;
 use App\Http\Controllers\PromoController;
 use App\Http\Controllers\HomestayContentController;
@@ -15,91 +13,113 @@ use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\PenempatanKamarController;
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
 
-Route::middleware('auth:sanctum')->get('/cek-siapa-saya', function (Request $request) {
-    return response()->json([
-        'message' => 'Token Valid!',
-        'user_id' => $request->user()->id,
-        'nama' => $request->user()->name, // atau username
-        'role' => $request->user()->role, // atau role->name
-    ]);
-});
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
 
-use Laravel\Telescope\Http\Controllers\HomeController;
-Route::get('/review/latest', [ReviewController::class, 'getFeaturedReviews']);
+// ===============================================================================================
+// 1. PUBLIC ROUTES (Akses Bebas)
+// ===============================================================================================
 
-Route::get('/review', [ReviewController::class, 'index']);
-Route::apiResource('review', ReviewController::class);
-// routes/api.php
-Route::apiResource('/kamar_units', KamarUnitsController::class);
+// Auth
 Route::post('/register', [ApiAuthController::class, 'register']);
 Route::post('/login', [ApiAuthController::class, 'login']);
-Route::apiResource('kamar', KamarController::class);
-Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
-    Route::put('/profil', [ProfileController::class, 'update']);
-    Route::get('/pemesanan/{pemesanan}', [PemesananController::class, 'show']);
-    Route::get('/pemesanan', [PemesananController::class, 'index']);
-    Route::post('/pemesanan', [PemesananController::class, 'store']);
-    Route::post('/pemesanan/{pemesanan}/pembayaran', [PembayaranController::class, 'store']);
-    Route::post('/review', [ReviewController::class, 'store']);
-});
+
+// Kamar (Read Only untuk Customer/Publik)
+Route::get('/kamar', [KamarController::class, 'index']);
+Route::get('/kamar/{kamar}', [KamarController::class, 'show']);
+Route::get('/cek-ketersediaan', [KamarController::class, 'cekKetersediaan']);
+Route::get('/bank-accounts', [App\Http\Controllers\BankAccountController::class, 'index']);
+
+// Reviews
+Route::get('/review', [ReviewController::class, 'index']);
+Route::get('/review/latest', [ReviewController::class, 'getFeaturedReviews']);
+
+// Promo & Content
 Route::get('/promo/latest', [PromoController::class, 'latest']);
-Route::apiResource('promo', PromoController::class);
-
-Route::post('/promo/validate', [PromoController::class, 'validatePromo']);
-
-// Rute Privat (butuh login) untuk mengupdate konten
-// Route::middleware('auth:sanctum')->group(function () {
-//     // ... rute privat lain
-
-//     // Gunakan POST untuk update karena bisa membawa file gambar
-//     Route::post('/content/homepage/update', [HomestayContentController::class, 'update']);
-// });
-
-// Route::controller(HomestayContentController::class)->middleware(['auth:api_owner', 'check.role.owner'])->group(function () {
-//     // Rute untuk mengelola konten homestay
-//     Route::get('/content/homepage', 'show')->name('content.homepage.show');
-//     Route::post('/content/homepage/update', 'update')->name('content.homepage.update');
-// });
+Route::get('/promo', [PromoController::class, 'index']); // Public list
+Route::post('/promo/check', [PromoController::class, 'checkPromo'])->middleware('throttle:30,1');
 Route::get('/content/homepage', [HomestayContentController::class, 'show']);
 
-Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
-    Route::post('/content/homepage/update', [HomestayContentController::class, 'update']);
-    Route::get('/admin/pemesanan/{pemesanan}', [PemesananController::class, 'showForOwner']); // <-- Tambahkan ini
-    Route::get('/admin/pemesanan', [PemesananController::class, 'indexOwner']); // <-- Tambahkan ini
-    Route::get('/admin/pembayaran/verifikasi', [PembayaranController::class, 'indexForOwner']);
-    Route::post('/admin/pembayaran/verifikasi/{pemesanan}', [PembayaranController::class, 'verifikasi']);
-    Route::get('/admin/review', [ReviewController::class, 'indexForOwner']);
-    Route::put('/admin/review/{review}', [ReviewController::class, 'updateStatus']);
-    Route::post('/admin/pemesanan-offline', [PemesananController::class, 'storeOffline']);
+// ===============================================================================================
+// 2. AUTHENTICATED ROUTES (Umum)
+// ===============================================================================================
+// routes/api.php
 
+Route::middleware('auth:sanctum')->get('/cek-siapa-saya', [ApiAuthController::class, 'checkMe']);
+Route::middleware('auth:sanctum')->get('/user', [ApiAuthController::class, 'getUser']);
+
+Route::middleware('auth:sanctum')->post('/logout', [ApiAuthController::class, 'logout']);
+
+
+// ===============================================================================================
+// 3. CUSTOMER ROUTES (Role: Customer)
+// ===============================================================================================
+Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
+    Route::put('/profil', [ProfileController::class, 'update']);
+
+    // Pemesanan
+    Route::get('/pemesanan', [PemesananController::class, 'index']);
+    Route::post('/pemesanan', [PemesananController::class, 'store']);
+    Route::get('/pemesanan/{pemesanan}', [PemesananController::class, 'show']);
+    Route::post('/pemesanan/{pemesanan}/cancel', [PemesananController::class, 'cancel']);
+    Route::post('/pemesanan/{pemesanan}/pembayaran', [PembayaranController::class, 'store']);
+
+    // Review
+    Route::post('/review', [ReviewController::class, 'store']);
 });
-Route::get('/laporan', [LaporanController::class, 'index']);
+
+// ===============================================================================================
+// 4. OWNER ROUTES (Role: Owner)
+// ===============================================================================================
 Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
-    Route::get('/admin/promo/{promo}', [PromoController::class, 'showForOwner']); // <-- Tambahkan ini
-    Route::get('/admin/promo/{promo}', [PromoController::class, 'indexby']); // <-- Tambahkan ini
-    Route::get('/admin/promo', [PromoController::class, 'index']); // <-- Tambahkan ini
+
+    // --- Manajemen Promo (Explicit) ---
+    Route::get('/admin/promo', [PromoController::class, 'indexForOwner']);
     Route::post('/admin/promo', [PromoController::class, 'store']);
+    Route::get('/admin/promo/{promo}', [PromoController::class, 'showForOwner']);
     Route::put('/admin/promo/{promo}', [PromoController::class, 'update']);
     Route::delete('/admin/promo/{promo}', [PromoController::class, 'destroy']);
-    Route::post('/admin/addkamar', [KamarController::class, 'addKamar']);
 
-    Route::post('/admin/check-in', [PenempatanKamarController::class, 'checkIn']);
-    Route::post('/admin/check-out/{id}', [PenempatanKamarController::class, 'checkOut']);
+    // --- Manajemen Kamar (Explicit as requested) ---
+    // Menggunakan POST /admin/kamar untuk addKamar (Create dengan Unit)
+    Route::get('/admin/kamar', [KamarController::class, 'index']); // Bisa reuse index atau buat indexOwner jika perlu
+    Route::post('/admin/kamar', [KamarController::class, 'addKamar']); // <-- Custom logic creation
+    Route::put('/admin/kamar/{kamar}', [KamarController::class, 'update']);
+    Route::delete('/admin/kamar/{kamar}', [KamarController::class, 'destroy']);
+    Route::delete('/admin/kamar-image/{id}', [KamarController::class, 'deleteImage']); // New Route
 
-    Route::post('/admin/kamar-unit/{id}/set-available', [PenempatanKamarController::class, 'setAvailable']);
+    // --- Manajemen Pemesanan & Pembayaran ---
+    Route::get('/admin/pemesanan', [PemesananController::class, 'indexOwner']);
+    Route::get('/admin/pemesanan/{pemesanan}', [PemesananController::class, 'showForOwner']);
+    Route::post('/admin/pemesanan-offline', [PemesananController::class, 'storeOffline']);
+    Route::post('/admin/pemesanan/{pemesanan}/cancel', [PemesananController::class, 'cancelByOwner']);
+
+    Route::get('/admin/pembayaran-notifikasi', [PembayaranController::class, 'getPembayaranNotifikasi']);
+
+    Route::get('/admin/pembayaran/verifikasi', [PembayaranController::class, 'indexForOwner']);
+    Route::post('/admin/pembayaran/verifikasi/{pemesanan}', [PembayaranController::class, 'verifikasi']);
+
+    // --- Manajemen Review ---
+    Route::get('/admin/review', [ReviewController::class, 'indexForOwner']);
+    Route::put('/admin/review/{review}', [ReviewController::class, 'updateStatus']);
+
+    // --- Manajemen Konten Homepage ---
+    Route::post('/content/homepage/update', [HomestayContentController::class, 'update']);
+
+    // --- Laporan & Kalender ---
+    Route::get('/laporan', [LaporanController::class, 'index']);
+    Route::get('/admin/dashboard-stats', [LaporanController::class, 'dashboard']); // New Route
     Route::get('/admin/kalender-data', [LaporanController::class, 'getKalenderData']);
 
+    // --- Operasional Check-In/Out ---
+    Route::post('/admin/check-in', [PenempatanKamarController::class, 'checkIn']);
+    Route::post('/admin/check-out/{id}', [PenempatanKamarController::class, 'checkOut']);
+    Route::post('/admin/kamar-unit/{id}/set-available', [PenempatanKamarController::class, 'setAvailable']);
+    Route::put('/admin/kamar-units/{id}', [PenempatanKamarController::class, 'setAvailable']);
+    // --- Misc ---
+    Route::apiResource('/kamar-units', KamarUnitsController::class); // Jika owner butuh akses direct ke unit
 });
-
-
-Route::get('/cek-ketersediaan', [KamarController::class, 'cekKetersediaan']);
-
-
-
-
-
-Route::post('/cek-promo', [PromoController::class, 'checkPromo']);

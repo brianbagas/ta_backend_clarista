@@ -19,7 +19,7 @@ return new class extends Migration
             $table->softDeletes();
         });
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
+            $table->ulid('id')->primary();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('no_hp', 20)->nullable();

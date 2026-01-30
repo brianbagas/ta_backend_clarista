@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\HomestayContent;
 use Illuminate\Http\Request;
+use App\Traits\ApiResponseTrait;
 
 class HomestayContentController extends Controller
 {
+    use ApiResponseTrait;
+
     /**
      * Display a listing of the resource.
      */
@@ -38,7 +41,7 @@ class HomestayContentController extends Controller
     {
         // Ambil record pertama, atau buat baru jika tidak ada
         $content = HomestayContent::firstOrCreate(['id' => 1]);
-        return response()->json($content);
+        return $this->successResponse($content, 'Konten homestay berhasil diambil.');
     }
 
     /**
@@ -52,7 +55,7 @@ class HomestayContentController extends Controller
     /**
      * Update the specified resource in storage.
      */
- public function update(Request $request)
+    public function update(Request $request)
     {
         $content = HomestayContent::firstOrFail();
 
@@ -74,7 +77,7 @@ class HomestayContentController extends Controller
 
         $content->update($validatedData);
 
-        return response()->json($content);
+        return $this->successResponse($content, 'Konten homestay berhasil diperbarui.');
     }
     /**
      * Remove the specified resource from storage.

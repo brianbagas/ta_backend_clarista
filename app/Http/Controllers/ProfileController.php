@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use App\Traits\ApiResponseTrait;
 
 class ProfileController extends Controller
 {
+    use ApiResponseTrait;
+
     /**
      * Display the user's profile form.
      */
@@ -33,9 +36,9 @@ class ProfileController extends Controller
         }
 
         $request->user()->save();
-        return $request;
-        // return Redirect::route('profile.edit')->with('status', 'profile-updated');
-}
+
+        return $this->successResponse($request->user(), 'Profil berhasil diperbarui.');
+    }
 
     /**
      * Delete the user's account.

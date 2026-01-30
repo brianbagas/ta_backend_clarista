@@ -17,6 +17,16 @@ class Promo extends Model
         'nilai_diskon',
         'berlaku_mulai',
         'berlaku_selesai',
+        'is_active',
+        'kuota',
+        'kuota_terpakai',
+        'min_transaksi',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'berlaku_mulai' => 'date',
+        'berlaku_selesai' => 'date',
     ];
 
     protected $dates = ['deleted_at'];

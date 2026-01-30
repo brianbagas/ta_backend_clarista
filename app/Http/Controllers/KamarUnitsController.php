@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\KamarUnit;
 use Illuminate\Http\Request;
+use App\Traits\ApiResponseTrait;
 
 class KamarUnitsController extends Controller
 {
+    use ApiResponseTrait;
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-         $query = KamarUnit::query();
+        $query = KamarUnit::query();
 
         if ($request->filled('kamar_id')) {
             $query->where('kamar_id', $request->kamar_id);
@@ -20,10 +23,7 @@ class KamarUnitsController extends Controller
 
         $units = $query->orderBy('nomor_unit', 'asc')->get();
 
-        return response()->json([
-            'message' => 'List unit kamar retrieved successfully',
-            'data' => $units
-        ]);
+        return $this->successResponse($units, 'List unit kamar retrieved successfully');
     }
 
     /**
@@ -39,7 +39,19 @@ class KamarUnitsController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'kamar_id' => 'required|exists:kamars,id_kamar',
+            'nomor_unit' => 'required|string|max:50',
+            'status_unit' => 'required|in:available,unavailable,maintenance',
+        ]);
+
+        $unit = KamarUnit::create([
+            'kamar_id' => $request->kamar_id,
+            'nomor_unit' => $request->nomor_unit,
+            'status_unit' => $request->status_unit,
+        ]);
+
+        return $this->successResponse($unit, 'Unit kamar berhasil ditambahkan', 201);
     }
 
     /**
@@ -63,18 +75,15 @@ class KamarUnitsController extends Controller
      */
     public function update(Request $request, KamarUnit $kamarUnit)
     {
-            $request->validate([
-            'status_unit' => 'required|in:available,occupied,maintenance',
+        $request->validate([
+            'status_unit' => 'required|in:available,unavailable,maintenance',
         ]);
 
         $kamarUnit->update([
             'status_unit' => $request->status_unit
         ]);
 
-        return response()->json([
-            'message' => 'Status unit berhasil diperbarui',
-            'data' => $kamarUnit
-        ]);
+        return $this->successResponse($kamarUnit, 'Status unit berhasil diperbarui');
     }
 
     /**
@@ -84,8 +93,6 @@ class KamarUnitsController extends Controller
     {
         $kamarUnit->delete();
 
-        return response()->json([
-            'message' => 'Unit kamar berhasil dihapus'
-        ]);
+        return $this->successResponse(null, 'Unit kamar berhasil dihapus');
     }
 }

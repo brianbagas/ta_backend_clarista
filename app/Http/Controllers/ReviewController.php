@@ -6,69 +6,74 @@ use App\Models\Pemesanan;
 use App\Models\Review;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Traits\ApiResponseTrait;
+
 class ReviewController extends Controller
 {
-    private function formatReview($review) {
-    return [
-        'id' => $review->id,
-        'rating' => $review->rating,
-        'komentar' => $review->komentar,
-        'tanggal' => $review->created_at->format('d F Y'),
-        'user' => [
-            'name' => $review->user->name ?? 'Pelanggan',
-        ]
-    ];
-}
+    use ApiResponseTrait;
 
-public function getFeaturedReviews() {
-    $reviews = Review::where('status', 'disetujui')
-        ->with('user')
-        ->latest()
-        ->take(9)
-        ->get();
+    private function formatReview($review)
+    {
+        return [
+            'id' => $review->id,
+            'rating' => $review->rating,
+            'komentar' => $review->komentar,
+            'tanggal' => $review->created_at->format('d F Y'),
+            'user' => [
+                'name' => $review->pemesanan->user->name ?? 'Pelanggan',
+            ]
+        ];
+    }
 
-    return response()->json($reviews->map(fn($r) => $this->formatReview($r)));
-}
+    public function getFeaturedReviews()
+    {
+        $reviews = Review::where('status', 'disetujui')
+            ->with('pemesanan.user')
+            ->latest()
+            ->take(9)
+            ->get();
+
+        return $this->successResponse($reviews->map(fn($r) => $this->formatReview($r)), 'Featured reviews retrieved successfully.');
+    }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-         $reviews = Review::where('status', 'disetujui')
-                         ->with('user') // Muat data user untuk menampilkan nama
-                         ->latest()
-                         ->get();
+        $reviews = Review::where('status', 'disetujui')
+            ->with('pemesanan.user')
+            ->latest()
+            ->get();
 
-        
+
         $formattedReviews = $reviews->map(function ($review) {
-                return [
-                    'id' => $review->id,
-                    'rating' => $review->rating,
-                    'komentar' => $review->komentar,
-                    'tanggal' => $review->created_at->format('d F Y'),
-                    'user' => [
-                        'name' => $review->user->name,
-                        // Anda bisa menambahkan data lain di sini jika perlu
-                    ]
-                ];
-            });
-        return response()->json($formattedReviews);
+            return [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'komentar' => $review->komentar,
+                'tanggal' => $review->created_at->format('d F Y'),
+                'user' => [
+                    'name' => $review->pemesanan->user->name ?? 'Pelanggan',
+                ]
+            ];
+        });
+        return $this->successResponse($formattedReviews, 'Daftar review berhasil ditampilkan.');
     }
     // app/Http/Controllers/ReviewController.php
 
-// ... (method index, store, dll.)
+    // ... (method index, store, dll.)
 
-/**
- * Mengambil 9 review terbaru yang disetujui untuk homepage.
- */
-  
+    /**
+     * Mengambil 9 review terbaru yang disetujui untuk homepage.
+     */
+
     public function indexForOwner()
     {
         $reviews = Review::with('user')->latest()->get();
-        return response()->json($reviews);
+        return $this->successResponse($reviews, 'Daftar review untuk owner berhasil ditampilkan.');
     }
 
-     public function updateStatus(Request $request, Review $review)
+    public function updateStatus(Request $request, Review $review)
     {
         $validated = $request->validate([
             'status' => 'required|in:disetujui,disembunyikan',
@@ -76,10 +81,7 @@ public function getFeaturedReviews() {
 
         $review->update(['status' => $validated['status']]);
 
-        return response()->json([
-            'message' => 'Status review berhasil diperbarui.',
-            'data' => $review,
-        ]);
+        return $this->successResponse($review, 'Status review berhasil diperbarui.');
     }
 
     /**
@@ -95,7 +97,7 @@ public function getFeaturedReviews() {
      */
     public function store(Request $request)
     {
-        
+
         $validated = $request->validate([
             'pemesanan_id' => 'required|exists:pemesanans,id',
             'rating' => 'required|integer|min:1|max:5',
@@ -106,33 +108,29 @@ public function getFeaturedReviews() {
 
         // --- Pengecekan Keamanan & Aturan Bisnis ---
 
-        // 1. Otorisasi: Pastikan user adalah pemilik pesanan
+        // 1. Otorisasi
         if (Auth::id() !== $pemesanan->user_id) {
-            return response()->json(['message' => 'Anda tidak bisa mereview pesanan ini.'], 403);
+            return $this->errorResponse('Anda tidak bisa mereview pesanan ini.', 403);
         }
 
-        // 2. Aturan Bisnis: Pastikan status pesanan sudah "selesai"
+        // 2. Aturan Bisnis
         if ($pemesanan->status_pemesanan !== 'selesai') {
-            return response()->json(['message' => 'Anda hanya bisa mereview pesanan yang sudah selesai.'], 422);
+            return $this->errorResponse('Anda hanya bisa mereview pesanan yang sudah selesai.', 422);
         }
 
-        // 3. Aturan Bisnis: Pastikan pesanan belum pernah direview
+        // 3. Aturan Bisnis
         if ($pemesanan->review()->exists()) {
-            return response()->json(['message' => 'Pesanan ini sudah pernah Anda review.'], 422);
+            return $this->errorResponse('Pesanan ini sudah pernah Anda review.', 422);
         }
 
         // --- Simpan Review ---
         $review = Review::create([
             'pemesanan_id' => $pemesanan->id,
-            'user_id' => Auth::id(),
             'rating' => $validated['rating'],
             'komentar' => $validated['komentar'],
         ]);
 
-        return response()->json([
-            'message' => 'Terima kasih atas ulasan Anda!',
-            'data' => $review,
-        ], 201);
+        return $this->successResponse($review, 'Terima kasih atas ulasan Anda!', 201);
     }
 
     /**
@@ -167,5 +165,5 @@ public function getFeaturedReviews() {
         //
     }
 
-    
+
 }
