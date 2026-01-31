@@ -31,6 +31,6 @@ return [
 
     'supports_credentials' => true,
 
-    'domain' => ['.http://localhost:5173/','.http://localhost:3000/',]
+    // 'domain' => ['.http://localhost:5173/', '.http://localhost:3000/',]
 
 ];

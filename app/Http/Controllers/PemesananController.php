@@ -31,7 +31,7 @@ class PemesananController extends Controller
 
         // Ambil pemesanan milik user, urutkan dari yang terbaru dengan relasinya
         $pemesanans = $user->pemesanans()
-            ->with(['detailPemesanans.kamar.images', 'review'])
+            ->with(['detailPemesanans.kamar.images'])
             ->orderBy('created_at', 'desc')
             ->get();
 

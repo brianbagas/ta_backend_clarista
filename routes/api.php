@@ -53,7 +53,7 @@ Route::middleware('auth:sanctum')->get('/cek-siapa-saya', [ApiAuthController::cl
 Route::middleware('auth:sanctum')->get('/user', [ApiAuthController::class, 'getUser']);
 
 Route::middleware('auth:sanctum')->post('/logout', [ApiAuthController::class, 'logout']);
-
+Route::middleware('auth:sanctum')->put('/password', [ProfileController::class, 'updatePassword']);
 
 // ===============================================================================================
 // 3. CUSTOMER ROUTES (Role: Customer)

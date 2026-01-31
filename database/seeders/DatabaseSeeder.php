@@ -56,58 +56,7 @@ class RoleSeeder extends Seeder
         DB::table('roles')->insert($roles);
     }
 }
-class KamarSeeder extends Seeder
-{
-    public function run(): void
-    {
-        // Hapus data lama (opsional)
-        // Kamar::query()->delete();
 
-        // Buat beberapa data kamar spesifik
-        Kamar::factory()->create([
-            'tipe_kamar' => 'Single Bed',
-            'deskripsi' => 'Kamar yang nyaman dan ringkas, cocok untuk solo traveler.',
-            'harga' => 350000,
-        ]);
-
-        Kamar::factory()->create([
-            'tipe_kamar' => 'Double Bed',
-            'deskripsi' => 'Ruangan yang lebih luas, ideal untuk pasangan atau dua orang.',
-            'harga' => 550000,
-        ]);
-
-        // Buat 5 data kamar acak lainnya
-        // Kamar::factory()->count(5)->create();
-    }
-}
-class PromoSeeder extends Seeder
-{
-    public function run(): void
-    {
-        // Hapus data lama (opsional)
-        Promo::query()->delete();
-
-        // Buat beberapa promo spesifik
-        Promo::factory()->create([
-            'nama_promo' => 'Diskon Akhir Pekan',
-            'kode_promo' => 'WEEKENDSERU',
-            'tipe_diskon' => 'persen',
-            'nilai_diskon' => 15,
-            'berlaku_selesai' => now()->addMonths(1),
-        ]);
-
-        Promo::factory()->create([
-            'nama_promo' => 'Potongan Langsung Pengguna Baru',
-            'kode_promo' => 'NEWUSER25K',
-            'tipe_diskon' => 'nominal',
-            'nilai_diskon' => 25000,
-            'berlaku_selesai' => now()->addMonths(3),
-        ]);
-
-        // Buat 5 promo acak lainnya
-        Promo::factory()->count(5)->create();
-    }
-}
 class KamarImageSeeder extends Seeder
 {
     public function run(): void
@@ -131,27 +80,44 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
         ]);
+        // Ambil ID Role
+        $ownerRole = Role::where('role', 'owner')->first();
+        $customerRole = Role::where('role', 'customer')->first();
+
         // Buat 1 Akun Owner
-        User::factory()->owner()->create([
-            'name' => 'Admin Clarista',
-            'email' => 'owner@clarista.com',
-        ]);
-        User::factory()->customer()->create([
-            'name' => 'Customer Clarista',
-            'email' => 'customer@clarista.com',
-        ]);
+        if ($ownerRole) {
+            User::create([
+                'name' => 'Admin Clarista',
+                'email' => 'owner@clarista.com',
+                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                'role_id' => $ownerRole->id,
+                'no_hp' => '081234567890',
+                'gender' => 'wanita'
+            ]);
+        }
+
+        if ($customerRole) {
+            User::create([
+                'name' => 'Customer Clarista',
+                'email' => 'customer@clarista.com',
+                'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                'role_id' => $customerRole->id,
+                'no_hp' => '089876543210',
+                'gender' => 'pria'
+            ]);
+        }
 
         // Panggil Seeder untuk Kamar
         $this->call([
             KamarSeeder::class,
             PromoSeeder::class,
             HomestayContentSeeder::class,
-            BankAccountSeeder::class, // Tambahkan ini
-            KamarImageSeeder::class,
-            KamarUnitSeeder::class,
-            PemesananSeeder::class,
-            MultiPemesananSeeder::class,
-            ReviewSeeder::class,
+            BankAccountSeeder::class,
+            KamarUnitSeeder::class, // Aman, logic manual
+            // KamarImageSeeder::class, // Menggunakan Factory, disable untuk production tanpa factory
+            // PemesananSeeder::class, // Logic kompleks/factory, disable dulu
+            // MultiPemesananSeeder::class,
+            // ReviewSeeder::class,
             // PenempatanKamarSeeder::class,
         ]);
     }

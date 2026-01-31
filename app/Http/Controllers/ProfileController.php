@@ -60,4 +60,18 @@ class ProfileController extends Controller
 
         return Redirect::to('/');
     }
+
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+        ]);
+
+        $request->user()->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+        ]);
+
+        return $this->successResponse(null, 'Password berhasil diperbarui.');
+    }
 }
