@@ -118,6 +118,8 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     // --- Operasional Check-In/Out ---
     Route::post('/admin/check-in', [PenempatanKamarController::class, 'checkIn']);
     Route::post('/admin/check-out/{id}', [PenempatanKamarController::class, 'checkOut']);
+    Route::post('/admin/ganti-unit', [PenempatanKamarController::class, 'gantiUnit']);
+    Route::get('/admin/available-units', [PenempatanKamarController::class, 'getAvailableUnits']); // <-- Baru
     Route::post('/admin/kamar-unit/{id}/set-available', [PenempatanKamarController::class, 'setAvailable']);
     Route::put('/admin/kamar-units/{id}', [PenempatanKamarController::class, 'setAvailable']);
     // --- Misc ---

@@ -50,17 +50,17 @@ class Kamar extends Model
 
     public function getAvailableStock($checkIn, $checkOut)
     {
-        // Gunakan nama kolom: 'kamar_id' (bukan room_type_id)
-        $bookedCount = DetailPemesanan::where('kamar_id', $this->id)
+        // Gunakan primary key yang benar: id_kamar
+        $bookedCount = DetailPemesanan::where('kamar_id', $this->id_kamar)
 
             // Asumsi nama relasi di model Detail ke Booking adalah 'pemesanan'
             ->whereHas('pemesanan', function ($query) use ($checkIn, $checkOut) {
 
                 // Filter status & tanggal di tabel INDUK (Pemesanan/Booking)
-                $query->where('status', '!=', 'batal')
+                $query->where('status_pemesanan', '!=', 'batal')
                     ->where(function ($qDate) use ($checkIn, $checkOut) {
-                    $qDate->where('check_in_date', '<', $checkOut)
-                        ->where('check_out_date', '>', $checkIn);
+                    $qDate->where('tanggal_check_in', '<', $checkOut)
+                        ->where('tanggal_check_out', '>', $checkIn);
                 });
             })
 
@@ -68,7 +68,7 @@ class Kamar extends Model
             ->sum('jumlah_kamar');
 
         // Hitung Sisa
-        $sisa = $this->total_rooms - $bookedCount;
+        $sisa = $this->jumlah_total - $bookedCount;
 
         return max($sisa, 0);
     }

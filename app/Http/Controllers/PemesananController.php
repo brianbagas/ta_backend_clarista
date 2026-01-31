@@ -81,7 +81,9 @@ class PemesananController extends Controller
                             $query->where('tanggal_check_in', '<', $checkOut)
                                 ->where('tanggal_check_out', '>', $checkIn);
                         });
-                })->pluck('kamar_unit_id');
+                })
+                    ->whereNotIn('status_penempatan', ['cancelled', 'checked_out']) // PENTING: Exclude penempatan yang dibatalkan/selesai
+                    ->pluck('kamar_unit_id');
 
 
                 $availableUnits = KamarUnit::where('kamar_id', $kamar->id_kamar)

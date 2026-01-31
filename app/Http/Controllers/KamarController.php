@@ -5,6 +5,7 @@ use App\Models\DetailPemesanan;
 use App\Models\Kamar;
 use App\Models\KamarUnit;
 use App\Models\KamarImage;
+use App\Models\PenempatanKamar;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -268,10 +269,12 @@ class KamarController extends Controller
             ->get()
             ->map(function ($kamar) use ($checkIn, $checkOut) {
 
-                // 3. LOGIKA UTAMA: Hitung Kamar yang SUDAH DIPESAN (Booked)
-                // Kita cari di tabel transaksi (DetailPemesanan), bukan tabel fisik.
-                $jumlahTerpesan = DetailPemesanan::where('kamar_id', $kamar->id_kamar)
-                    ->whereHas('pemesanan', function ($q) use ($checkIn, $checkOut) {
+                // 3. LOGIKA UTAMA: Hitung Unit yang SUDAH TERISI (via PenempatanKamar)
+                // Gunakan PenempatanKamar karena ini mencerminkan unit fisik yang sebenarnya terpakai
+                $occupiedUnitIds = PenempatanKamar::whereHas('kamarUnit', function ($q) use ($kamar) {
+                    $q->where('kamar_id', $kamar->id_kamar);
+                })
+                    ->whereHas('detailPemesanan.pemesanan', function ($q) use ($checkIn, $checkOut) {
                     $q->where('status_pemesanan', '!=', 'batal') // Abaikan yang batal
                         ->where(function ($query) use ($checkIn, $checkOut) {
                             // (StartBooking < RequestEnd) AND (EndBooking > RequestStart)
@@ -279,10 +282,13 @@ class KamarController extends Controller
                                 ->where('tanggal_check_out', '>', $checkIn);
                         });
                 })
-                    ->sum('jumlah_kamar');
+                    ->whereNotIn('status_penempatan', ['cancelled', 'checked_out']) // Exclude yang dibatalkan/selesai
+                    ->pluck('kamar_unit_id')
+                    ->unique()
+                    ->count();
 
                 // 4. Hitung Sisa
-                $sisa = $kamar->total_fisik - $jumlahTerpesan;
+                $sisa = $kamar->total_fisik - $occupiedUnitIds;
 
                 // 5. Masukkan data ke object response
                 $kamar->sisa_kamar = max($sisa, 0);
