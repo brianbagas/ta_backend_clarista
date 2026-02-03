@@ -48,15 +48,19 @@ class PembayaranController extends Controller
         ]);
 
         // Kirim email sesuai status
-        if ($pemesanan->user && $pemesanan->user->email) {
-            if ($validated['status'] === 'dikonfirmasi') {
-                // Pembayaran dikonfirmasi
-                Mail::to($pemesanan->user->email)->send(new PesananDikonfirmasi($pemesanan));
-            } else {
-                // Pembayaran ditolak (status 'batal')
-                $catatanAdmin = $validated['catatan_admin'] ?? 'Bukti pembayaran tidak valid. Silakan upload ulang dengan bukti yang jelas.';
-                Mail::to($pemesanan->user->email)->send(new PembayaranDitolak($pemesanan, $catatanAdmin));
+        try {
+            if ($pemesanan->user && $pemesanan->user->email) {
+                if ($validated['status'] === 'dikonfirmasi') {
+                    // Pembayaran dikonfirmasi
+                    Mail::to($pemesanan->user->email)->send(new PesananDikonfirmasi($pemesanan));
+                } else {
+                    // Pembayaran ditolak (status 'batal')
+                    $catatanAdmin = $validated['catatan_admin'] ?? 'Bukti pembayaran tidak valid. Silakan upload ulang dengan bukti yang jelas.';
+                    Mail::to($pemesanan->user->email)->send(new PembayaranDitolak($pemesanan, $catatanAdmin));
+                }
             }
+        } catch (\Exception $e) {
+            Log::error('Gagal kirim email verifikasi: ' . $e->getMessage());
         }
 
         return $this->successResponse($pemesanan, 'Status pemesanan berhasil diubah menjadi ' . $validated['status']);
