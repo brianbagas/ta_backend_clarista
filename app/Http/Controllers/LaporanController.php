@@ -8,6 +8,8 @@ use App\Models\Pemesanan;
 use App\Models\PenempatanKamar;
 use Carbon\Carbon;
 use App\Traits\ApiResponseTrait;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 
 class LaporanController extends Controller
 {
@@ -114,5 +116,76 @@ class LaporanController extends Controller
         return $this->successResponse([
             'active_rooms' => $activeRooms
         ], 'Data dashboard berhasil diambil');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        // // Increase memory and time limit for PDF generation
+        // ini_set('memory_limit', '512M');
+        // set_time_limit(300);
+
+        try {
+            // 1. Ambil input filter (sama seperti method index)
+            if ($request->has(['start_date', 'end_date'])) {
+                $startDate = Carbon::parse($request->start_date)->startOfDay();
+                $endDate = Carbon::parse($request->end_date)->endOfDay();
+                $periodeLabel = $startDate->translatedFormat('d M Y') . ' - ' . $endDate->translatedFormat('d M Y');
+            } else {
+                $bulan = $request->input('bulan', date('m'));
+                $tahun = $request->input('tahun', date('Y'));
+                $startDate = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth();
+                $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
+                $periodeLabel = $startDate->translatedFormat('F Y');
+            }
+
+            // 2. Query Dasar (optimize dengan select & eager loading)
+            $query = Pemesanan::select('id', 'kode_booking', 'user_id', 'tanggal_check_in', 'tanggal_check_out', 'total_bayar', 'status_pemesanan')
+                ->whereIn('status_pemesanan', ['dikonfirmasi', 'selesai'])
+                ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('tanggal_bayar', [$startDate, $endDate]);
+                })
+                ->with([
+                    'user:id,name,email',
+                    'pembayaran:id,pemesanan_id,tanggal_bayar,jumlah_bayar'
+                ]);
+
+            // 3. Hitung Agregasi
+            $totalPendapatan = $query->sum('total_bayar');
+            $jumlahTransaksi = $query->count();
+
+            // 4. Ambil Detail Transaksi (order & get)
+            $transaksi = $query->orderBy('tanggal_check_in', 'asc')->get();
+
+            // 5. Generate PDF
+            $pdf = Pdf::loadView('laporan.pdf', [
+                'periode' => $periodeLabel,
+                'totalPendapatan' => $totalPendapatan,
+                'jumlahTransaksi' => $jumlahTransaksi,
+                'transaksi' => $transaksi
+            ]);
+
+            // 6. Set paper size dan orientation
+            $pdf->setPaper('a4', 'landscape');
+
+            // Optimize PDF rendering
+            $pdf->setOption([
+                'dpi' => 96, // Lower DPI for faster generation
+                'enable_html5_parser' => true,
+                'enable_remote' => false, // Disable remote resource loading
+            ]);
+
+            // 7. Return PDF sebagai download
+            $filename = 'laporan-pendapatan-' . $startDate->format('Y-m-d') . '.pdf';
+
+            return $pdf->download($filename);
+
+        } catch (\Throwable $e) {
+            Log::error('PDF Export Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal export PDF: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

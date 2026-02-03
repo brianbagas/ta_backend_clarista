@@ -33,16 +33,7 @@ class KamarImage extends Model
         return asset('storage/' . $cleanPath);
     }
 
-    public function getThumbnailAttribute()
-    {
-        $firstImage = $this->images->first();
 
-        if (!$firstImage) {
-            return asset('images/default-room.jpg'); // Gambar default jika tidak ada
-        }
-
-        return asset('storage/kamars/' . $firstImage->image_path); // Menjadi URL lengkap
-    }
 }
 
 

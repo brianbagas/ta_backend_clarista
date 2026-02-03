@@ -15,8 +15,10 @@ use App\Models\Promo;
 use App\Models\User;
 use App\Models\Pembayaran;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use App\Traits\ApiResponseTrait;
+use App\Mail\PesananDibatalkan;
 
 class PemesananController extends Controller
 {
@@ -370,7 +372,9 @@ class PemesananController extends Controller
 
             DB::commit();
 
-            DB::commit();
+            if ($pemesanan->user && $pemesanan->user->email) {
+                Mail::to($pemesanan->user->email)->send(new PesananDibatalkan($pemesanan));
+            }
 
             return $this->successResponse($pemesanan, 'Pemesanan berhasil dibatalkan oleh owner.');
 

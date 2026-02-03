@@ -83,15 +83,14 @@ class PenempatanKamarController extends Controller
             ->where('status_penempatan', 'assigned')
             ->exists();
 
-        DB::beginTransaction(); // Mulai Transaksi Database
+        DB::beginTransaction(); 
         try {
-            // A. Cari Existing Penempatan (dari Booking)
+            
             $penempatan = PenempatanKamar::where('detail_pemesanan_id', $request->detail_pemesanan_id)
                 ->where('kamar_unit_id', $request->kamar_unit_id)
                 ->first();
 
             if ($penempatan) {
-                // UPDATE
                 if ($penempatan->status_penempatan == 'assigned') {
                     DB::rollBack();
                     return $this->errorResponse('Gagal! Pesanan ini sudah Check-In sebelumnya.', 400);
@@ -105,27 +104,25 @@ class PenempatanKamarController extends Controller
                 $penempatan = PenempatanKamar::create([
                     'detail_pemesanan_id' => $request->detail_pemesanan_id,
                     'kamar_unit_id' => $request->kamar_unit_id,
-                    'status_penempatan' => 'assigned', // Status aktif
-                    'check_in_aktual' => Carbon::now(), // Waktu saat tombol ditekan
+                    'status_penempatan' => 'assigned', 
+                    'check_in_aktual' => Carbon::now(), 
                     'check_out_aktual' => null,
                 ]);
             }
 
-            // 3. Cek apakah unit sedang maintenance?
             $unit = KamarUnit::findOrFail($request->kamar_unit_id);
             if ($unit->status_unit != 'available') {
-                // Warning: jika unit maintenance tapi kita paksa check-in?
-                // Biasanya kita tolak.
+
                 DB::rollBack();
                 return $this->errorResponse('Gagal! Unit kamar sedang maintenance/kotor.', 400);
             }
 
-            DB::commit(); // Simpan perubahan
+            DB::commit(); 
 
             return $this->successResponse($penempatan, 'Check-in berhasil dilakukan.');
 
         } catch (\Exception $e) {
-            DB::rollBack(); // Batalkan jika error
+            DB::rollBack(); 
             return $this->errorResponse('Error: ' . $e->getMessage(), 500);
         }
     }
@@ -133,41 +130,38 @@ class PenempatanKamarController extends Controller
 
     public function checkOut($id)
     {
-        // 1. Cari Data Penempatan
         $penempatan = PenempatanKamar::findOrFail($id);
 
-        // --- VALIDASI TAMBAHAN (MENCEGAH DOUBLE CHECK-OUT) ---
+
         if ($penempatan->status_penempatan != 'assigned') {
             return $this->errorResponse('Gagal! Tamu belum check-in atau sudah check-out.', 400);
         }
 
         DB::beginTransaction();
         try {
-            // 2. Update Tabel PenempatanKamars (Tamu Keluar)
+        
             $penempatan->update([
-                'status_penempatan' => 'checked_out', // Status riwayat
-                'check_out_aktual' => Carbon::now(), // Catat waktu keluar
+                'status_penempatan' => 'checked_out', 
+                'check_out_aktual' => Carbon::now(), 
             ]);
 
-            // 3. Update Tabel KamarUnit (Fisik Kamar jadi Maintenance)
+          
             $unit = KamarUnit::findOrFail($penempatan->kamar_unit_id);
 
-            // Ubah status jadi 'maintenance' (atau 'cleaning')
-            // Ini akan membuat kamar HILANG dari pencarian pelanggan
             $unit->update([
                 'status_unit' => 'maintenance'
             ]);
 
             $pemesanan = $penempatan->detailPemesanan->pemesanan;
 
-            // Cek apakah masih ada unit yang belum check-out untuk pemesanan ini
+       
             $stillOccupied = PenempatanKamar::whereHas('detailPemesanan', function ($q) use ($pemesanan) {
                 $q->where('pemesanan_id', $pemesanan->id);
             })
                 ->where('status_penempatan', '!=', 'checked_out')
                 ->count();
 
-            // Jika semua unit sudah check-out, update status pemesanan
+   
             if ($stillOccupied == 0 && $pemesanan->status_pemesanan == 'dikonfirmasi') {
                 $pemesanan->update(['status_pemesanan' => 'selesai']);
             }
@@ -184,21 +178,18 @@ class PenempatanKamarController extends Controller
 
     public function setAvailable($id)
     {
-        // $id adalah ID dari tabel KamarUnit
+    
 
         DB::beginTransaction();
         try {
-            // 1. Cari Unit Kamar
-            $unit = KamarUnit::findOrFail($id);
 
-            // 2. Cek status saat ini
-            // Kita hanya mau ubah jika statusnya 'maintenance' atau 'cleaning'
+            $unit = KamarUnit::findOrFail($id);
             if ($unit->status_unit == 'available') {
                 DB::rollBack();
                 return $this->errorResponse('Unit ini sudah berstatus available.', 400);
             }
 
-            // 3. Update Status Menjadi Available
+       
             $unit->update([
                 'status_unit' => 'available'
             ]);
@@ -218,34 +209,25 @@ class PenempatanKamarController extends Controller
         $request->validate([
             'penempatan_id' => 'required|exists:penempatan_kamars,id',
             'new_kamar_unit_id' => 'required|exists:kamar_units,id',
-            'old_unit_status' => 'nullable|in:available,maintenance', // Opsional: status unit lama
+            'old_unit_status' => 'nullable|in:available,maintenance', 
         ]);
 
         DB::beginTransaction();
         try {
-            // 1. Ambil Data Penempatan Lama
             $penempatan = PenempatanKamar::findOrFail($request->penempatan_id);
             $oldUnitId = $penempatan->kamar_unit_id;
 
-            // 2. Cek apakah Unit Baru Valid
+  
             $newUnit = KamarUnit::findOrFail($request->new_kamar_unit_id);
             $oldUnit = KamarUnit::findOrFail($oldUnitId);
 
-            // REVISI: Allow Upgrade/Downgrade (Beda Tipe)
-            // if ($newUnit->kamar_id != $oldUnit->kamar_id) {
-            //     return $this->errorResponse('Gagal! Unit pengganti harus dari tipe kamar yang sama.', 400);
-            // }
-
-            // 3. Cek Ketersediaan Unit Baru di Tanggal Tersebut
-            // Ambil tanggal check-in & check-out dari pemesanan induk
             $detail = $penempatan->detailPemesanan;
             $pemesanan = $detail->pemesanan;
             $checkIn = $pemesanan->tanggal_check_in;
             $checkOut = $pemesanan->tanggal_check_out;
 
-            // Cek Tabrakan Jadwal (Overlap)
             $isOccupied = PenempatanKamar::where('kamar_unit_id', $newUnit->id)
-                ->where('id', '!=', $penempatan->id) // Jangan cek diri sendiri
+                ->where('id', '!=', $penempatan->id)
                 ->whereHas('detailPemesanan.pemesanan', function ($q) use ($checkIn, $checkOut) {
                     $q->where('status_pemesanan', '!=', 'batal')
                         ->where(function ($query) use ($checkIn, $checkOut) {
@@ -258,16 +240,13 @@ class PenempatanKamarController extends Controller
                 return $this->errorResponse('Gagal! Unit pengganti sudah terisi di tanggal tersebut.', 400);
             }
 
-            // 4. Update Penempatan ke Unit Baru
+     
             $penempatan->update([
                 'kamar_unit_id' => $newUnit->id,
                 'catatan' => $penempatan->catatan . " [Pindah dari Unit {$oldUnit->nomor_unit} ke {$newUnit->nomor_unit}]",
             ]);
 
-            // === BARU: Cek Ganti Tipe Kamar & Update Stok ===
             if ($oldUnit->kamar_id != $newUnit->kamar_id) {
-                // Jika tipe kamar berubah, kita harus update DetailPemesanan
-                // agar perhitungan stok (getAvailableStock) menjadi akurat.
 
                 $currentDetail = $penempatan->detailPemesanan;
 
@@ -278,12 +257,9 @@ class PenempatanKamarController extends Controller
                         'kamar_id' => $newUnit->kamar_id
                     ]);
                 } else {
-                    // Kasus Kompleks: 1 Detail = Banyak Kamar (Misal pesan 2 Deluxe)
-                    // Kita harus SPLIT detail ini.
-                    // 1. Kurangi jumlah kamar di detail lama
                     $currentDetail->decrement('jumlah_kamar');
 
-                    // 2. Buat Detail Baru untuk tipe kamar baru (tetap dengan harga lama/free upgrade)
+                    // Buat Detail Baru untuk tipe kamar baru (tetap dengan harga lama/free upgrade)
                     $newDetail = DetailPemesanan::create([
                         'pemesanan_id' => $currentDetail->pemesanan_id,
                         'kamar_id' => $newUnit->kamar_id,
@@ -291,15 +267,15 @@ class PenempatanKamarController extends Controller
                         'harga_per_malam' => $currentDetail->harga_per_malam, // Harga ikut yang lama
                     ]);
 
-                    // 3. Pindahkan linking penempatan ke detail baru
+                    // Pindahkan linking penempatan ke detail baru
                     $penempatan->update([
                         'detail_pemesanan_id' => $newDetail->id
                     ]);
                 }
             }
-            // ================================================
+        
 
-            // 5. Update Status Unit Lama (Jika diminta Maintenance)
+            //  Update Status Unit Lama (Jika diminta Maintenance)
             if ($request->old_unit_status === 'maintenance') {
                 $oldUnit->update(['status_unit' => 'maintenance']);
             }
@@ -320,19 +296,17 @@ class PenempatanKamarController extends Controller
             'kamar_id' => 'required|exists:kamars,id_kamar',
             'check_in' => 'required|date',
             'check_out' => 'required|date|after:check_in',
-            'current_unit_id' => 'nullable' // Untuk exclude unit saat ini (optional)
+            'current_unit_id' => 'nullable' 
         ]);
 
         $checkIn = $request->check_in;
         $checkOut = $request->check_out;
 
-        // Cari Unit yang "Available" secara status fisik
-        // DAN TIDAK tabrakan jadwal di PenempatanKamar
         $units = KamarUnit::where('kamar_id', $request->kamar_id)
-            ->where('status_unit', 'available') // Hanya unit yang fisik bagus
+            ->where('status_unit', 'available') 
             ->whereDoesntHave('penempatankamars', function ($query) use ($checkIn, $checkOut) {
                 $query->whereHas('detailPemesanan.pemesanan', function ($q) {
-                    $q->where('status_pemesanan', '!=', 'batal'); // Hiraukan yang batal
+                    $q->where('status_pemesanan', '!=', 'batal'); 
                 })
                     ->whereHas('detailPemesanan.pemesanan', function ($q) use ($checkIn, $checkOut) {
                         // Cek Overlap Tanggal
@@ -343,18 +317,8 @@ class PenempatanKamarController extends Controller
                     })
                     ->where('status_penempatan', '!=', 'cancelled') // Pastikan penempatan aktif
                     ->where('status_penempatan', '!=', 'checked_out'); // Kalau sudah check-out, dianggap kosong? 
-                // NOTE: Logika check-out agak tricky. Kalau sudah check-out TAPI masih dalam range tanggal booking,
-                // apakah unit itu available?
-                // Biasanya hotel: Jika tamu check-out lebih awal, unit itu technically kosong.
-                // TAPI sistem kita booking based on Date Range. 
-                // Aman-nya: Check overlap based on Booking Date Range mutlak.
-                // Jadi hapus klausa 'checked_out' check ini jika ingin strict sesuai booking.
-                // Kita pakai strict booking date saja.
             })
             ->get();
-
-        // Jika ada current_unit_id (unit sendiri), jangan exclude di SQL biar fleksibel,
-        // tapi biasanya UI yang filter. Disini return pure available.
 
         return response()->json([
             'success' => true,

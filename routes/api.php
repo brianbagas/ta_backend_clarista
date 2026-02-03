@@ -20,6 +20,11 @@ use App\Http\Controllers\PenempatanKamarController;
 |--------------------------------------------------------------------------
 */
 
+// Handle CORS preflight requests
+Route::options('{any}', function () {
+    return response()->noContent();
+})->where('any', '.*');
+
 // ===============================================================================================
 // 1. PUBLIC ROUTES (Akses Bebas)
 // ===============================================================================================
@@ -101,6 +106,7 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     Route::get('/admin/pembayaran-notifikasi', [PembayaranController::class, 'getPembayaranNotifikasi']);
 
     Route::get('/admin/pembayaran/verifikasi', [PembayaranController::class, 'indexForOwner']);
+    Route::get('/admin/pembayaran/verifikasi/{pemesanan}', [PembayaranController::class, 'showVerificationDetail']); // <-- New Route
     Route::post('/admin/pembayaran/verifikasi/{pemesanan}', [PembayaranController::class, 'verifikasi']);
 
     // --- Manajemen Review ---
@@ -112,6 +118,7 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
 
     // --- Laporan & Kalender ---
     Route::get('/laporan', [LaporanController::class, 'index']);
+    Route::get('/laporan/export-pdf', [LaporanController::class, 'exportPdf']);
     Route::get('/admin/dashboard-stats', [LaporanController::class, 'dashboard']); // New Route
     Route::get('/admin/kalender-data', [LaporanController::class, 'getKalenderData']);
 
@@ -122,6 +129,13 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     Route::get('/admin/available-units', [PenempatanKamarController::class, 'getAvailableUnits']); // <-- Baru
     Route::post('/admin/kamar-unit/{id}/set-available', [PenempatanKamarController::class, 'setAvailable']);
     Route::put('/admin/kamar-units/{id}', [PenempatanKamarController::class, 'setAvailable']);
+
+    // --- Manajemen Bank Account (Owner) ---
+    Route::get('/admin/bank-accounts', [App\Http\Controllers\BankAccountController::class, 'indexForOwner']);
+    Route::post('/admin/bank-accounts', [App\Http\Controllers\BankAccountController::class, 'store']);
+    Route::put('/admin/bank-accounts/{bankAccount}', [App\Http\Controllers\BankAccountController::class, 'update']);
+    Route::delete('/admin/bank-accounts/{bankAccount}', [App\Http\Controllers\BankAccountController::class, 'destroy']);
+
     // --- Misc ---
     Route::apiResource('/kamar-units', KamarUnitsController::class); // Jika owner butuh akses direct ke unit
 });

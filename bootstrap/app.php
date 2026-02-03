@@ -19,6 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'abilitys' => CheckForAnyAbility::class,
             'role' => \App\Http\Middleware\CheckRoleOwner::class,
         ]);
+
+        // Enable CORS for API routes
+        $middleware->api(prepend: [
+            \Illuminate\Http\Middleware\HandleCors::class,
+        ]);
     })
     ->withSchedule(function (Schedule $schedule) {
         // DAFTARKAN COMMAND ANDA DI SINI

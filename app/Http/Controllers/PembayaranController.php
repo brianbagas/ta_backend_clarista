@@ -8,6 +8,8 @@ use App\Models\Pemesanan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\PesananDikonfirmasi;
+use App\Mail\PembayaranDitolak;
+use App\Mail\PembayaranMasuk;
 use App\Traits\ApiResponseTrait;
 
 class PembayaranController extends Controller
@@ -36,15 +38,35 @@ class PembayaranController extends Controller
     {
         $validated = $request->validate([
             'status' => 'required|in:dikonfirmasi,batal',
+            'catatan_admin' => 'nullable|string',
         ]);
 
-        $pemesanan->update(['status_pemesanan' => $validated['status']]);
+        $pemesanan->update([
+            'status_pemesanan' => $validated['status'],
+            'catatan' => $validated['catatan_admin'] ?? null,
+        ]);
 
-        // Kirim notifikasi email ke customer
+        // Kirim email sesuai status
         if ($pemesanan->user && $pemesanan->user->email) {
-            Mail::to($pemesanan->user->email)->send(new PesananDikonfirmasi($pemesanan));
+            if ($validated['status'] === 'dikonfirmasi') {
+                // Pembayaran dikonfirmasi
+                Mail::to($pemesanan->user->email)->send(new PesananDikonfirmasi($pemesanan));
+            } else {
+                // Pembayaran ditolak (status 'batal')
+                $catatanAdmin = $validated['catatan_admin'] ?? 'Bukti pembayaran tidak valid. Silakan upload ulang dengan bukti yang jelas.';
+                Mail::to($pemesanan->user->email)->send(new PembayaranDitolak($pemesanan, $catatanAdmin));
+            }
         }
+
         return $this->successResponse($pemesanan, 'Status pemesanan berhasil diubah menjadi ' . $validated['status']);
+    }
+
+    public function showVerificationDetail(Pemesanan $pemesanan)
+    {
+        // Pastikan relasi pembayaran diload
+        $pemesanan->load(['user', 'detailPemesanans.kamar', 'pembayaran', 'detailPemesanans.penempatanKamars.kamarUnit']);
+
+        return $this->successResponse($pemesanan, 'Detail verifikasi berhasil diambil.');
     }
 
     /**
@@ -102,6 +124,15 @@ class PembayaranController extends Controller
 
         // 6. Update status pesanan utama
         $pemesanan->update(['status_pemesanan' => 'menunggu_konfirmasi']);
+
+        // 7. Notifikasi Email ke Owner
+        try {
+            $pemesanan->load('pembayaran'); // Pastikan relasi pembayaran termuat
+            Mail::to('purwoclarista@gmail.com')->send(new PembayaranMasuk($pemesanan));
+        } catch (\Exception $e) {
+            // Log error tapi jangan gagalkan proses upload
+            \Illuminate\Support\Facades\Log::error('Gagal kirim email notifikasi pembayaran owner: ' . $e->getMessage());
+        }
 
         return $this->successResponse(null, 'Bukti pembayaran berhasil diunggah. Menunggu konfirmasi dari admin.', 200);
     }
