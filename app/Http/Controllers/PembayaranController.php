@@ -11,7 +11,8 @@ use App\Mail\PesananDikonfirmasi;
 use App\Mail\PembayaranDitolak;
 use App\Mail\PembayaranMasuk;
 use App\Traits\ApiResponseTrait;
-
+use App\Models\User;
+use Illuminate\Support\Facades\Log;
 class PembayaranController extends Controller
 {
     use ApiResponseTrait;
@@ -128,10 +129,20 @@ class PembayaranController extends Controller
         // 7. Notifikasi Email ke Owner
         try {
             $pemesanan->load('pembayaran'); // Pastikan relasi pembayaran termuat
-            Mail::to('purwoclarista@gmail.com')->send(new PembayaranMasuk($pemesanan));
+
+            // Ambil email owner dari database (User dengan role 'owner')
+            // Asumsi: Ada relasi 'role' di User model dan tabel roles punya kolom 'role' (bukan name)
+            $ownerEmail = User::whereHas('role', function ($q) {
+                $q->where('role', 'owner');
+            })->value('email');
+
+            // Fallback jika tidak ada owner di DB (untuk safety)
+            $recipient = $ownerEmail ?: 'owner@clarista.com';
+
+            Mail::to($recipient)->send(new PembayaranMasuk($pemesanan));
         } catch (\Exception $e) {
-            // Log error tapi jangan gagalkan proses upload
-            \Illuminate\Support\Facades\Log::error('Gagal kirim email notifikasi pembayaran owner: ' . $e->getMessage());
+
+            Log::error('Gagal kirim email notifikasi pembayaran owner: ' . $e->getMessage());
         }
 
         return $this->successResponse(null, 'Bukti pembayaran berhasil diunggah. Menunggu konfirmasi dari admin.', 200);
