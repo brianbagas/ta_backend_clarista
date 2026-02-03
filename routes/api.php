@@ -59,12 +59,13 @@ Route::middleware('auth:sanctum')->get('/user', [ApiAuthController::class, 'getU
 
 Route::middleware('auth:sanctum')->post('/logout', [ApiAuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->put('/password', [ProfileController::class, 'updatePassword']);
+Route::middleware('auth:sanctum')->put('/profil', [ProfileController::class, 'update']);
 
 // ===============================================================================================
 // 3. CUSTOMER ROUTES (Role: Customer)
 // ===============================================================================================
 Route::middleware(['auth:sanctum', 'role:customer'])->group(function () {
-    Route::put('/profil', [ProfileController::class, 'update']);
+    // Route::put('/profil', [ProfileController::class, 'update']); // Moved to general auth
 
     // Pemesanan
     Route::get('/pemesanan', [PemesananController::class, 'index']);
