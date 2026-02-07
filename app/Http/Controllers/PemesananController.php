@@ -505,4 +505,65 @@ class PemesananController extends Controller
         }
     }
 
+    /**
+     * Mark a booking as tidak datang (Owner only).
+     */
+    public function markAsNoShow(Pemesanan $pemesanan)
+    {
+        // 1. Validasi: Status pemesanan harus 'dikonfirmasi'
+        if ($pemesanan->status_pemesanan !== 'dikonfirmasi') {
+            return $this->errorResponse(
+                'Hanya pesanan yang sudah dikonfirmasi yang bisa ditandai tidak datang. Status saat ini: ' . $pemesanan->status_pemesanan,
+                400
+            );
+        }
+
+        // 2. Validasi: Cek apakah sudah check-in
+        $hasCheckedIn = $pemesanan->detailPemesanans()
+            ->whereHas('penempatanKamars', function ($q) {
+                $q->whereNotNull('check_in_aktual');
+            })
+            ->exists();
+
+        if ($hasCheckedIn) {
+            return $this->errorResponse(
+                'Pesanan tidak bisa ditandai tidak datang karena pelanggan sudah check-in.',
+                400
+            );
+        }
+
+        // 3. Proses Penandaan Tidak Datang
+        try {
+            DB::beginTransaction();
+
+            $pemesanan->update([
+                'status_pemesanan' => 'tidak_datang',
+                'catatan' => 'Ditandai tidak datang oleh owner - Pelanggan tidak datang di tanggal check-in',
+                'dibatalkan_oleh' => 'owner',
+                'dibatalkan_at' => now(),
+            ]);
+
+            // Update status penempatan kamar menjadi 'cancelled'
+            foreach ($pemesanan->detailPemesanans as $detail) {
+                $detail->penempatanKamars()->update([
+                    'status_penempatan' => 'cancelled',
+                    'dibatalkan_oleh' => 'owner',
+                    'dibatalkan_at' => now(),
+                    'catatan' => 'Tidak datang - Pelanggan tidak datang'
+                ]);
+            }
+
+            DB::commit();
+
+            return $this->successResponse(
+                $pemesanan->load('detailPemesanans.penempatanKamars'),
+                'Pesanan berhasil ditandai sebagai tidak datang. Kamar telah dirilis.'
+            );
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse('Gagal menandai pesanan sebagai tidak datang.', 500, $e->getMessage());
+        }
+    }
+
 }

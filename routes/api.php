@@ -103,6 +103,8 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     Route::get('/admin/pemesanan/{pemesanan}', [PemesananController::class, 'showForOwner']);
     Route::post('/admin/pemesanan-offline', [PemesananController::class, 'storeOffline']);
     Route::post('/admin/pemesanan/{pemesanan}/cancel', [PemesananController::class, 'cancelByOwner']);
+    Route::post('/admin/pemesanan/{pemesanan}/mark-no-show', [PemesananController::class, 'markAsNoShow']);
+
 
     Route::get('/admin/pembayaran-notifikasi', [PembayaranController::class, 'getPembayaranNotifikasi']);
 

@@ -13,6 +13,8 @@ use App\Mail\PembayaranMasuk;
 use App\Traits\ApiResponseTrait;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use App\Models\Promo;
 class PembayaranController extends Controller
 {
     use ApiResponseTrait;
@@ -42,10 +44,41 @@ class PembayaranController extends Controller
             'catatan_admin' => 'nullable|string',
         ]);
 
-        $pemesanan->update([
-            'status_pemesanan' => $validated['status'],
-            'catatan' => $validated['catatan_admin'] ?? null,
-        ]);
+        if ($validated['status'] === 'dikonfirmasi') {
+            $pemesanan->update([
+                'status_pemesanan' => 'dikonfirmasi',
+                'catatan' => $validated['catatan_admin'] ?? null,
+            ]);
+        } else {
+            // Status batal
+            $catatan = $validated['catatan_admin'] ?? 'Bukti pembayaran tidak valid.';
+
+            $pemesanan->update([
+                'status_pemesanan' => 'batal',
+                'catatan' => $catatan,
+                'alasan_batal' => $catatan,
+                'dibatalkan_oleh' => 'owner', // Asumsi admin/owner yang verifikasi
+                'dibatalkan_at' => now(),
+            ]);
+
+            // Release room units (set to cancelled)
+            foreach ($pemesanan->detailPemesanans as $detail) {
+                $detail->penempatanKamars()->update([
+                    'status_penempatan' => 'cancelled',
+                    'dibatalkan_oleh' => 'owner',
+                    'dibatalkan_at' => now(),
+                    'catatan' => 'Payment rejected by Owner. Reason: ' . $catatan
+                ]);
+            }
+
+            // Release promo quota if used
+            if ($pemesanan->promo_id) {
+                $promo = Promo::find($pemesanan->promo_id);
+                if ($promo) {
+                    $promo->decrement('kuota_terpakai');
+                }
+            }
+        }
 
         // Kirim email sesuai status
         try {
