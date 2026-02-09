@@ -30,4 +30,8 @@ class Promo extends Model
     ];
 
     protected $dates = ['deleted_at'];
+    public function pemesanans()
+    {
+        return $this->hasMany(Pemesanan::class);
+    }
 }

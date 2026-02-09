@@ -15,10 +15,10 @@ return new class extends Migration {
             $table->foreignUlid('pemesanan_id')->constrained('pemesanans')->onDelete('cascade');
             $table->string('bukti_bayar_path'); // Path file bukti bayar
             $table->decimal('jumlah_bayar', 15, 2); // Nominal yang dibayar customer
-            $table->string('bank_tujuan', 255)->nullable(); // Bank asal transfer
+            $table->string('bank_tujuan', 25)->nullable(); // Bank asal transfer
             $table->string('nama_pengirim', 100)->nullable(); // Nama pengirim di bukti transfer
             $table->datetime('tanggal_bayar')->nullable(); // Tanggal transfer
-            $table->string('status_verifikasi')->default('menunggu_verifikasi');
+            $table->string('status_verifikasi', 25)->default('menunggu_verifikasi');
             $table->timestamps();
             $table->softDeletes();
         });

@@ -18,4 +18,8 @@ class Pembayaran extends Model
         'tanggal_bayar',
         'status_verifikasi'
     ];
+    public function pemesanan()
+    {
+        return $this->belongsTo(Pemesanan::class);
+    }
 }

@@ -8,5 +8,10 @@ class Role extends Model
 {
     use SoftDeletes;
     protected $fillable = ['role', 'deskripsi'];
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
     //
 }

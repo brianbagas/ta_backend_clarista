@@ -391,14 +391,15 @@ class PemesananController extends Controller
     public function storeOffline(Request $request)
     {
         try {
-            // 1. Validasi Input
+            // 1. Validasi Input - Mendukung multi-room dengan array kamars
             $request->validate([
                 'nama_pemesan' => 'required|string',
                 'no_hp' => 'required|string',
                 'check_in_date' => 'required|date|after_or_equal:today',
                 'durasi' => 'required|integer|min:1',
-                'kamar_id' => 'required|exists:kamars,id_kamar',
-                'jumlah_kamar' => 'required|integer|min:1',
+                'kamars' => 'required|array|min:1',
+                'kamars.*.kamar_id' => 'required|exists:kamars,id_kamar',
+                'kamars.*.jumlah_kamar' => 'required|integer|min:1',
             ]);
         } catch (ValidationException $e) {
             return $this->errorResponse('Validasi gagal', 422, $e->errors());
@@ -407,41 +408,74 @@ class PemesananController extends Controller
         // Hitung tanggal check out
         $checkInDate = Carbon::parse($request->check_in_date);
         $checkOutDate = $checkInDate->copy()->addDays($request->durasi);
-
-        // 2. Cek Ketersediaan Kamar
-        $kamar = Kamar::findOrFail($request->kamar_id);
-
-        $totalHarga = $kamar->harga * $request->durasi * $request->jumlah_kamar;
+        $durasiMenginap = $request->durasi;
 
         try {
             // Mulai Transaksi Database
-            $result = DB::transaction(function () use ($kamar, $request, $checkInDate, $checkOutDate, $totalHarga) {
+            $result = DB::transaction(function () use ($request, $checkInDate, $checkOutDate, $durasiMenginap) {
 
-                // A. Cari User berdasarkan No HP, atau Buat Baru jika belum ada
+                // A. Pre-validate availability dan hitung total
+                $totalHarga = 0;
+                $bookingPlan = [];
+
+                foreach ($request->kamars as $item) {
+                    $kamar = Kamar::findOrFail($item['kamar_id']);
+
+                    // Cek ketersediaan unit menggunakan pattern yang sama dengan store()
+                    $occupiedUnitIds = PenempatanKamar::whereHas('detailPemesanan.pemesanan', function ($q) use ($checkInDate, $checkOutDate) {
+                        $q->where('status_pemesanan', '!=', 'batal')
+                            ->where(function ($query) use ($checkInDate, $checkOutDate) {
+                                $query->where('tanggal_check_in', '<', $checkOutDate)
+                                    ->where('tanggal_check_out', '>', $checkInDate);
+                            });
+                    })
+                        ->whereNotIn('status_penempatan', ['cancelled', 'checked_out'])
+                        ->pluck('kamar_unit_id');
+
+                    $availableUnits = KamarUnit::where('kamar_id', $kamar->id_kamar)
+                        ->where('status_unit', 'available')
+                        ->whereNotIn('id', $occupiedUnitIds)
+                        ->take($item['jumlah_kamar'])
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($availableUnits->count() < $item['jumlah_kamar']) {
+                        throw new \Exception("Stok kamar \"{$kamar->nama_kamar}\" tidak mencukupi. Hanya tersedia " . $availableUnits->count() . " unit.");
+                    }
+
+                    // Hitung total harga
+                    $totalHarga += $kamar->harga * $item['jumlah_kamar'] * $durasiMenginap;
+
+                    $bookingPlan[] = [
+                        'kamar' => $kamar,
+                        'qty' => $item['jumlah_kamar'],
+                        'units' => $availableUnits
+                    ];
+                }
+
+                // B. Cari User berdasarkan No HP, atau Buat Baru jika belum ada
                 $user = User::firstOrCreate(
                     ['email' => $request->no_hp . '@offline.guest'],
                     [
                         'name' => $request->nama_pemesan,
                         'no_hp' => $request->no_hp,
-                        'password' => Hash::make('tamu123'), // Password default
-                        'role_id' => 2, // Asumsikan 2 = customer
+                        'password' => Hash::make('tamu123'),
+                        'role_id' => 2,
                         'email_verified_at' => now(),
                     ]
                 );
 
-                // B. Buat Pesanan (Status langsung Confirmed/Paid)
+                // C. Buat Pesanan (Status langsung Confirmed/Paid)
                 $pemesanan = Pemesanan::create([
                     'user_id' => $user->id,
-                    'kamar_id' => $request->kamar_id,
                     'tanggal_check_in' => $checkInDate,
                     'tanggal_check_out' => $checkOutDate,
-                    'jumlah_kamar' => $request->jumlah_kamar,
                     'total_bayar' => $totalHarga,
                     'status_pemesanan' => 'dikonfirmasi',
                     'catatan' => 'Pemesanan Offline (Walk-in) via Admin',
                 ]);
 
-                // C. Buat Record Pembayaran (Langsung Lunas)
+                // D. Buat Record Pembayaran (Langsung Lunas)
                 Pembayaran::create([
                     'pemesanan_id' => $pemesanan->id,
                     'jumlah_bayar' => $totalHarga,
@@ -452,50 +486,29 @@ class PemesananController extends Controller
                     'bukti_bayar_path' => 'offline_transaction.jpg'
                 ]);
 
-                // 3. Cari Unit Kamar Kosong
-                $kamarUnits = KamarUnit::where('kamar_id', $request->kamar_id)
-                    ->where('status_unit', 'available')
-                    ->whereDoesntHave('penempatankamars', function ($q) use ($checkInDate, $checkOutDate) {
-                        $q->where(function ($query) use ($checkInDate, $checkOutDate) {
-                            $query->whereBetween('check_in_aktual', [$checkInDate, $checkOutDate])
-                                ->orWhere('status_penempatan', 'assigned');
-                        })
-                            ->orWhereHas('detailPemesanan.pemesanan', function ($q2) use ($checkInDate, $checkOutDate) {
-                                // 2. Cek Jadwal Online
-                                $q2->where('status_pemesanan', '!=', 'batal')
-                                    ->where(function ($q3) use ($checkInDate, $checkOutDate) {
-                                    $q3->where('tanggal_check_in', '<', $checkOutDate)
-                                        ->where('tanggal_check_out', '>', $checkInDate);
-                                });
-                            });
-                    })
-                    ->take($request->jumlah_kamar)
-                    ->get();
+                // E. Buat Detail Pemesanan & Penempatan untuk setiap tipe kamar
+                $isCheckInToday = $checkInDate->isToday();
 
-                // Validasi jumlah unit yang didapat
-                if ($kamarUnits->count() < $request->jumlah_kamar) {
-                    $totalTotal = KamarUnit::where('kamar_id', $request->kamar_id)->count();
-                    throw new \Exception("Stok kamar tidak mencukupi. Hanya tersedia " . $kamarUnits->count() . " unit (Total Unit: $totalTotal).");
-                }
-                // 4. Buat Detail Pemesanan
-                $detail = DetailPemesanan::create([
-                    'pemesanan_id' => $pemesanan->id,
-                    'kamar_id' => $request->kamar_id,
-                    'jumlah_kamar' => $request->jumlah_kamar,
-                    'harga_per_malam' => $kamar->harga,
-                ]);
-
-                foreach ($kamarUnits as $unit) {
-                    PenempatanKamar::create([
-                        'detail_pemesanan_id' => $detail->id,
-                        'kamar_unit_id' => $unit->id,
-                        'status_penempatan' => 'assigned',
-                        'check_in_aktual' => now(),
-                        'check_out_aktual' => null,
+                foreach ($bookingPlan as $plan) {
+                    $detail = DetailPemesanan::create([
+                        'pemesanan_id' => $pemesanan->id,
+                        'kamar_id' => $plan['kamar']->id_kamar,
+                        'jumlah_kamar' => $plan['qty'],
+                        'harga_per_malam' => $plan['kamar']->harga,
                     ]);
+
+                    foreach ($plan['units'] as $unit) {
+                        PenempatanKamar::create([
+                            'detail_pemesanan_id' => $detail->id,
+                            'kamar_unit_id' => $unit->id,
+                            'status_penempatan' => $isCheckInToday ? 'assigned' : 'pending',
+                            'check_in_aktual' => $isCheckInToday ? now() : null,
+                            'check_out_aktual' => null,
+                        ]);
+                    }
                 }
 
-                return $pemesanan;
+                return $pemesanan->load('detailPemesanans.kamar', 'detailPemesanans.penempatanKamars');
             });
 
             return $this->successResponse($result, 'Pemesanan Offline berhasil dibuat', 201);

@@ -21,7 +21,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('kamar_unit_id');
 
             // Status Siklus Hidup Penempatan
-            $table->string('status_penempatan')->default('assigned');
+            $table->string('status_penempatan', 25)->default('assigned');
             $table->string('catatan')->nullable();
             $table->enum('dibatalkan_oleh', ['customer', 'owner', 'system'])->nullable();
             $table->dateTime('dibatalkan_at')->nullable();

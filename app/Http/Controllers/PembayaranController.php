@@ -50,18 +50,17 @@ class PembayaranController extends Controller
                 'catatan' => $validated['catatan_admin'] ?? null,
             ]);
         } else {
-            // Status batal
             $catatan = $validated['catatan_admin'] ?? 'Bukti pembayaran tidak valid.';
 
             $pemesanan->update([
                 'status_pemesanan' => 'batal',
                 'catatan' => $catatan,
                 'alasan_batal' => $catatan,
-                'dibatalkan_oleh' => 'owner', // Asumsi admin/owner yang verifikasi
+                'dibatalkan_oleh' => 'owner',
                 'dibatalkan_at' => now(),
             ]);
 
-            // Release room units (set to cancelled)
+
             foreach ($pemesanan->detailPemesanans as $detail) {
                 $detail->penempatanKamars()->update([
                     'status_penempatan' => 'cancelled',

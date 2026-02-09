@@ -86,8 +86,6 @@ class LaporanController extends Controller
         }
 
         // 2. Query Dasar
-        // Filter berdasarkan TANGGAL BAYAR (Cashflow)
-        // Include 'tidak_datang' karena uang sudah masuk (no refund policy)
         $query = Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])
             ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {
                 $q->whereBetween('tanggal_bayar', [$startDate, $endDate]);
@@ -140,7 +138,6 @@ class LaporanController extends Controller
             }
 
             // 2. Query Dasar (optimize dengan select & eager loading)
-            // Include 'tidak_datang' karena uang sudah masuk (no refund policy)
             $query = Pemesanan::select('id', 'kode_booking', 'user_id', 'tanggal_check_in', 'tanggal_check_out', 'total_bayar', 'status_pemesanan')
                 ->whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])
                 ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {
