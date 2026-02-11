@@ -14,6 +14,5 @@ class BankAccount extends Model
         'nomor_rekening',
         'atas_nama',
         'is_active',
-        'logo_path'
     ];
 }

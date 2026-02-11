@@ -6,6 +6,7 @@ enum UnitStatus: string
 {
     case Available = 'available';
     case Unavailable = 'unavailable';
+    case Kotor = 'kotor';
     case Maintenance = 'maintenance';
 
     public function label(): string
@@ -13,6 +14,7 @@ enum UnitStatus: string
         return match ($this) {
             self::Available => 'Tersedia',
             self::Unavailable => 'Tidak Tersedia',
+            self::Kotor => 'Kotor',
             self::Maintenance => 'Maintenance',
         };
     }

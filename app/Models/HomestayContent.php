@@ -17,6 +17,5 @@ class HomestayContent extends Model
         'hero_title',
         'hero_subtitle',
         'hero_image_path',
-        'nama_bank', 'nomor_rekening', 'atas_nama_rekening'
     ];
 }

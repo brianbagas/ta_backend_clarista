@@ -76,6 +76,7 @@ class PenempatanKamarController extends Controller
         $request->validate([
             'detail_pemesanan_id' => 'required|exists:detail_pemesanans,id',
             'kamar_unit_id' => 'required|exists:kamar_units,id',
+            'catatan' => 'nullable|string|max:500',
         ]);
 
         // 2. Cek apakah Unit Kamar ini SEDANG DIPAKAI orang lain
@@ -83,9 +84,9 @@ class PenempatanKamarController extends Controller
             ->where('status_penempatan', 'assigned')
             ->exists();
 
-        DB::beginTransaction(); 
+        DB::beginTransaction();
         try {
-            
+
             $penempatan = PenempatanKamar::where('detail_pemesanan_id', $request->detail_pemesanan_id)
                 ->where('kamar_unit_id', $request->kamar_unit_id)
                 ->first();
@@ -99,14 +100,16 @@ class PenempatanKamarController extends Controller
                 $penempatan->update([
                     'status_penempatan' => 'assigned',
                     'check_in_aktual' => Carbon::now(),
+                    'catatan' => $request->catatan,
                 ]);
             } else {
                 $penempatan = PenempatanKamar::create([
                     'detail_pemesanan_id' => $request->detail_pemesanan_id,
                     'kamar_unit_id' => $request->kamar_unit_id,
-                    'status_penempatan' => 'assigned', 
-                    'check_in_aktual' => Carbon::now(), 
+                    'status_penempatan' => 'assigned',
+                    'check_in_aktual' => Carbon::now(),
                     'check_out_aktual' => null,
+                    'catatan' => $request->catatan,
                 ]);
             }
 
@@ -114,15 +117,15 @@ class PenempatanKamarController extends Controller
             if ($unit->status_unit != 'available') {
 
                 DB::rollBack();
-                return $this->errorResponse('Gagal! Unit kamar sedang maintenance/kotor.', 400);
+                return $this->errorResponse('Gagal! Unit kamar sedang kotor/maintenance.', 400);
             }
 
-            DB::commit(); 
+            DB::commit();
 
             return $this->successResponse($penempatan, 'Check-in berhasil dilakukan.');
 
         } catch (\Exception $e) {
-            DB::rollBack(); 
+            DB::rollBack();
             return $this->errorResponse('Error: ' . $e->getMessage(), 500);
         }
     }
@@ -139,36 +142,36 @@ class PenempatanKamarController extends Controller
 
         DB::beginTransaction();
         try {
-        
+
             $penempatan->update([
-                'status_penempatan' => 'checked_out', 
-                'check_out_aktual' => Carbon::now(), 
+                'status_penempatan' => 'checked_out',
+                'check_out_aktual' => Carbon::now(),
             ]);
 
-          
+
             $unit = KamarUnit::findOrFail($penempatan->kamar_unit_id);
 
             $unit->update([
-                'status_unit' => 'maintenance'
+                'status_unit' => 'kotor'
             ]);
 
             $pemesanan = $penempatan->detailPemesanan->pemesanan;
 
-       
+
             $stillOccupied = PenempatanKamar::whereHas('detailPemesanan', function ($q) use ($pemesanan) {
                 $q->where('pemesanan_id', $pemesanan->id);
             })
                 ->where('status_penempatan', '!=', 'checked_out')
                 ->count();
 
-   
+
             if ($stillOccupied == 0 && $pemesanan->status_pemesanan == 'dikonfirmasi') {
                 $pemesanan->update(['status_pemesanan' => 'selesai']);
             }
 
             DB::commit();
 
-            return $this->successResponse($penempatan, 'Check-out berhasil. Unit kamar kini berstatus MAINTENANCE.');
+            return $this->successResponse($penempatan, 'Check-out berhasil. Unit kamar kini berstatus KOTOR.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -178,7 +181,7 @@ class PenempatanKamarController extends Controller
 
     public function setAvailable($id)
     {
-    
+
 
         DB::beginTransaction();
         try {
@@ -189,7 +192,7 @@ class PenempatanKamarController extends Controller
                 return $this->errorResponse('Unit ini sudah berstatus available.', 400);
             }
 
-       
+
             $unit->update([
                 'status_unit' => 'available'
             ]);
@@ -209,7 +212,7 @@ class PenempatanKamarController extends Controller
         $request->validate([
             'penempatan_id' => 'required|exists:penempatan_kamars,id',
             'new_kamar_unit_id' => 'required|exists:kamar_units,id',
-            'old_unit_status' => 'nullable|in:available,maintenance', 
+            'old_unit_status' => 'nullable|in:available,kotor,maintenance',
         ]);
 
         DB::beginTransaction();
@@ -217,7 +220,7 @@ class PenempatanKamarController extends Controller
             $penempatan = PenempatanKamar::findOrFail($request->penempatan_id);
             $oldUnitId = $penempatan->kamar_unit_id;
 
-  
+
             $newUnit = KamarUnit::findOrFail($request->new_kamar_unit_id);
             $oldUnit = KamarUnit::findOrFail($oldUnitId);
 
@@ -240,7 +243,7 @@ class PenempatanKamarController extends Controller
                 return $this->errorResponse('Gagal! Unit pengganti sudah terisi di tanggal tersebut.', 400);
             }
 
-     
+
             $penempatan->update([
                 'kamar_unit_id' => $newUnit->id,
                 'catatan' => $penempatan->catatan . " [Pindah dari Unit {$oldUnit->nomor_unit} ke {$newUnit->nomor_unit}]",
@@ -273,7 +276,7 @@ class PenempatanKamarController extends Controller
                     ]);
                 }
             }
-        
+
 
             //  Update Status Unit Lama (Jika diminta Maintenance)
             if ($request->old_unit_status === 'maintenance') {
@@ -296,17 +299,17 @@ class PenempatanKamarController extends Controller
             'kamar_id' => 'required|exists:kamars,id_kamar',
             'check_in' => 'required|date',
             'check_out' => 'required|date|after:check_in',
-            'current_unit_id' => 'nullable' 
+            'current_unit_id' => 'nullable'
         ]);
 
         $checkIn = $request->check_in;
         $checkOut = $request->check_out;
 
         $units = KamarUnit::where('kamar_id', $request->kamar_id)
-            ->where('status_unit', 'available') 
+            ->where('status_unit', 'available')
             ->whereDoesntHave('penempatankamars', function ($query) use ($checkIn, $checkOut) {
                 $query->whereHas('detailPemesanan.pemesanan', function ($q) {
-                    $q->where('status_pemesanan', '!=', 'batal'); 
+                    $q->where('status_pemesanan', '!=', 'batal');
                 })
                     ->whereHas('detailPemesanan.pemesanan', function ($q) use ($checkIn, $checkOut) {
                         // Cek Overlap Tanggal

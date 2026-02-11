@@ -42,7 +42,7 @@ class KamarUnitsController extends Controller
         $request->validate([
             'kamar_id' => 'required|exists:kamars,id_kamar',
             'nomor_unit' => 'required|string|max:50',
-            'status_unit' => 'required|in:available,unavailable,maintenance',
+            'status_unit' => 'required|in:available,unavailable,kotor,maintenance',
         ]);
 
         $unit = KamarUnit::create([
@@ -76,7 +76,7 @@ class KamarUnitsController extends Controller
     public function update(Request $request, KamarUnit $kamarUnit)
     {
         $request->validate([
-            'status_unit' => 'required|in:available,unavailable,maintenance',
+            'status_unit' => 'required|in:available,unavailable,kotor,maintenance',
         ]);
 
         $kamarUnit->update([
