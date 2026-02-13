@@ -115,6 +115,7 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     // --- Manajemen Review ---
     Route::get('/admin/review', [ReviewController::class, 'indexForOwner']);
     Route::put('/admin/review/{review}', [ReviewController::class, 'updateStatus']);
+    Route::delete('/admin/review/{review}', [ReviewController::class, 'destroy']);
 
     // --- Manajemen Konten Homepage ---
     Route::post('/content/homepage/update', [HomestayContentController::class, 'update']);
@@ -133,11 +134,51 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     Route::post('/admin/kamar-unit/{id}/set-available', [PenempatanKamarController::class, 'setAvailable']);
     Route::put('/admin/kamar-units/{id}', [PenempatanKamarController::class, 'setAvailable']);
 
+    // --- Manajemen Kamar Units (Dirty/Maintenance) ---
+    Route::get('/admin/kamar-dirty', [KamarUnitsController::class, 'indexdirty']);
+
     // --- Manajemen Bank Account (Owner) ---
     Route::get('/admin/bank-accounts', [App\Http\Controllers\BankAccountController::class, 'indexForOwner']);
     Route::post('/admin/bank-accounts', [App\Http\Controllers\BankAccountController::class, 'store']);
     Route::put('/admin/bank-accounts/{bankAccount}', [App\Http\Controllers\BankAccountController::class, 'update']);
     Route::delete('/admin/bank-accounts/{bankAccount}', [App\Http\Controllers\BankAccountController::class, 'destroy']);
+
+    // --- Data Terhapus (Soft Delete Management) ---
+    // Kamar
+    Route::get('/admin/trashed/kamar', [KamarController::class, 'trashed']);
+    Route::post('/admin/trashed/kamar/{id}/restore', [KamarController::class, 'restore']);
+    Route::delete('/admin/trashed/kamar/{id}', [KamarController::class, 'forceDelete']);
+
+    // Kamar Unit
+    Route::get('/admin/trashed/kamar-unit', [KamarUnitsController::class, 'trashed']);
+    Route::post('/admin/trashed/kamar-unit/{id}/restore', [KamarUnitsController::class, 'restore']);
+    Route::delete('/admin/trashed/kamar-unit/{id}', [KamarUnitsController::class, 'forceDelete']);
+
+    // Promo
+    Route::get('/admin/trashed/promo', [PromoController::class, 'trashed']);
+    Route::post('/admin/trashed/promo/{id}/restore', [PromoController::class, 'restore']);
+    Route::delete('/admin/trashed/promo/{id}', [PromoController::class, 'forceDelete']);
+
+    // Pemesanan
+    Route::get('/admin/trashed/pemesanan', [PemesananController::class, 'trashed']);
+    Route::post('/admin/trashed/pemesanan/{id}/restore', [PemesananController::class, 'restore']);
+    Route::delete('/admin/trashed/pemesanan/{id}', [PemesananController::class, 'forceDelete']);
+
+    // Pembayaran
+    Route::get('/admin/trashed/pembayaran', [PembayaranController::class, 'trashed']);
+    Route::post('/admin/trashed/pembayaran/{id}/restore', [PembayaranController::class, 'restore']);
+    Route::delete('/admin/trashed/pembayaran/{id}', [PembayaranController::class, 'forceDelete']);
+
+    // Review
+    Route::get('/admin/trashed/review', [ReviewController::class, 'trashed']);
+    Route::post('/admin/trashed/review/{id}/restore', [ReviewController::class, 'restore']);
+    Route::delete('/admin/trashed/review/{id}', [ReviewController::class, 'forceDelete']);
+
+    // Bank Account
+    Route::get('/admin/trashed/bank-account', [App\Http\Controllers\BankAccountController::class, 'trashed']);
+    Route::post('/admin/trashed/bank-account/{id}/restore', [App\Http\Controllers\BankAccountController::class, 'restore']);
+    Route::delete('/admin/trashed/bank-account/{id}', [App\Http\Controllers\BankAccountController::class, 'forceDelete']);
+
 
     // --- Misc ---
     Route::apiResource('/kamar-units', KamarUnitsController::class); // Jika owner butuh akses direct ke unit

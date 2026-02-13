@@ -85,11 +85,9 @@ class LaporanController extends Controller
             $periodeLabel = $startDate->translatedFormat('F Y');
         }
 
-        // 2. Query Dasar
+
         $query = Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])
-            ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('tanggal_bayar', [$startDate, $endDate]);
-            });
+            ->whereBetween('created_at', [$startDate, $endDate]);
 
         // 3. Hitung Agregasi
         $totalPendapatan = $query->sum('total_bayar');
@@ -109,11 +107,51 @@ class LaporanController extends Controller
     }
     public function dashboard(Request $request)
     {
-        // 1. Hitung Kamar Terisi (Realtime)
+        // Default to current month/year if not provided
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+
+        // Date Ranges
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+
+        // 1. TOTAL PENDAPATAN (Income) - Based on Created Date (cocok dengan Laporan)
+        $paidBookingsQuery = Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        $incomeMonth = (int) $paidBookingsQuery->sum('total_bayar');
+
+        // 2. SEMUA STATUS COUNT - Based on Created Date (konsisten untuk chart "Pemesanan Bulan Ini")
+        // Semua status count harus pakai filter yang sama agar: total = lunas + pending + baru + batal
+        $monthlyBookingsQuery = Pemesanan::whereBetween('created_at', [$startDate, $endDate]);
+
+        $totalBookings = $monthlyBookingsQuery->count();
+
+        // Clone query untuk setiap status
+        $lunasCount = (clone $monthlyBookingsQuery)->whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])->count();
+        $cancelledCount = (clone $monthlyBookingsQuery)->where('status_pemesanan', 'batal')->count();
+        $newCount = (clone $monthlyBookingsQuery)->where('status_pemesanan', 'menunggu_pembayaran')->count();
+        $pendingVerifMonth = (clone $monthlyBookingsQuery)->where('status_pemesanan', 'menunggu_verifikasi')->count();
+
+
+
+        // 3. REALTIME ALERTS (Global, not just this month)
+        // For "Perlu Verifikasi" card, we usually want to know ALL pending items, not just this month's.
+        $pendingVerifAll = Pemesanan::where('status_pemesanan', 'menunggu_verifikasi')->count();
+
+        // 4. ACTIVE ROOMS (Realtime)
         $activeRooms = PenempatanKamar::where('status_penempatan', 'assigned')->count();
 
         return $this->successResponse([
-            'active_rooms' => $activeRooms
+            'income_month' => $incomeMonth,
+            'lunas_count' => $lunasCount,
+            'total_bookings' => $totalBookings,
+            'cancelled_count' => $cancelledCount,
+            'new_count' => $newCount,
+            'pending_verif_month' => $pendingVerifMonth,
+            'pending_count' => $pendingVerifAll, // Global pending for alert
+            'active_rooms' => $activeRooms,
+            'period_label' => $startDate->translatedFormat('F Y')
         ], 'Data dashboard berhasil diambil');
     }
 
@@ -137,12 +175,11 @@ class LaporanController extends Controller
                 $periodeLabel = $startDate->translatedFormat('F Y');
             }
 
-            // 2. Query Dasar (optimize dengan select & eager loading)
-            $query = Pemesanan::select('id', 'kode_booking', 'user_id', 'tanggal_check_in', 'tanggal_check_out', 'total_bayar', 'status_pemesanan')
+            // 2. Query Dasar - Filter berdasarkan tanggal pemesanan dibuat (created_at)
+            // Konsisten dengan method index() dan Dashboard
+            $query = Pemesanan::select('id', 'kode_booking', 'user_id', 'tanggal_check_in', 'tanggal_check_out', 'total_bayar', 'status_pemesanan', 'created_at')
                 ->whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])
-                ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {
-                    $q->whereBetween('tanggal_bayar', [$startDate, $endDate]);
-                })
+                ->whereBetween('created_at', [$startDate, $endDate])
                 ->with([
                     'user:id,name,email',
                     'pembayaran:id,pemesanan_id,tanggal_bayar,jumlah_bayar'

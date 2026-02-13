@@ -111,7 +111,7 @@ class ReviewTest extends TestCase
             'pemesanan_id' => $this->pemesanan->id,
             'rating' => 5,
             'komentar' => 'First review',
-            'status' => 'disetujui'
+            'status' => 'setujui'
         ]);
 
         $token = $this->customer->createToken('test-token')->plainTextToken;
@@ -151,14 +151,14 @@ class ReviewTest extends TestCase
             'pemesanan_id' => $this->pemesanan->id,
             'rating' => 5,
             'komentar' => 'Approved review',
-            'status' => 'disetujui'
+            'status' => 'setujui'
         ]);
 
         Review::create([
             'pemesanan_id' => Pemesanan::factory()->create()->id,
             'rating' => 3,
             'komentar' => 'Hidden review',
-            'status' => 'disembunyikan'
+            'status' => 'sembunyikan'
         ]);
 
         $response = $this->getJson('/api/review');
@@ -185,14 +185,14 @@ class ReviewTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
         ])->putJson("/api/admin/review/{$review->id}", [
-                    'status' => 'disetujui'
+                    'status' => 'setujui'
                 ]);
 
         $response->assertStatus(200);
 
         $this->assertDatabaseHas('reviews', [
             'id' => $review->id,
-            'status' => 'disetujui'
+            'status' => 'setujui'
         ]);
     }
 
@@ -211,14 +211,14 @@ class ReviewTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
         ])->putJson("/api/admin/review/{$review->id}", [
-                    'status' => 'disembunyikan'
+                    'status' => 'sembunyikan'
                 ]);
 
         $response->assertStatus(200);
 
         $this->assertDatabaseHas('reviews', [
             'id' => $review->id,
-            'status' => 'disembunyikan'
+            'status' => 'sembunyikan'
         ]);
     }
 
@@ -237,7 +237,7 @@ class ReviewTest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
         ])->putJson("/api/admin/review/{$review->id}", [
-                    'status' => 'disetujui'
+                    'status' => 'setujui'
                 ]);
 
         $response->assertStatus(403);

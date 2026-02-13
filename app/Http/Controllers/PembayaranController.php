@@ -134,7 +134,7 @@ class PembayaranController extends Controller
             'jumlah_bayar' => 'required|numeric|min:0',
             'bank_tujuan' => 'nullable|string|max:50',
             'nama_pengirim' => 'nullable|string|max:100',
-            'tanggal_bayar' => 'nullable|date',
+            // tanggal_bayar dihapus dari validasi - diisi otomatis oleh server
         ]);
 
         // 3. Validasi jumlah bayar
@@ -156,7 +156,7 @@ class PembayaranController extends Controller
             'jumlah_bayar' => $validated['jumlah_bayar'],
             'bank_tujuan' => $validated['bank_tujuan'],
             'nama_pengirim' => $validated['nama_pengirim'],
-            'tanggal_bayar' => $validated['tanggal_bayar'],
+            'tanggal_bayar' => now(), // Otomatis dari server, bukan input customer
         ]);
 
         // 6. Update status pesanan utama
@@ -220,5 +220,51 @@ class PembayaranController extends Controller
     {
         $pembayaran = Pemesanan::where('status_pemesanan', 'menunggu_konfirmasi')->count();
         return $this->successResponse($pembayaran, 'Jumlah pesanan menunggu konfirmasi berhasil ditampilkan.');
+    }
+
+    /**
+     * Get soft-deleted pembayarans.
+     */
+    public function trashed()
+    {
+        $pembayarans = Pembayaran::onlyTrashed()
+            ->with([
+                'pemesanan' => function ($query) {
+                    $query->withTrashed()->with('user');
+                }
+            ])
+            ->latest('deleted_at')
+            ->get();
+
+        return $this->successResponse($pembayarans, 'Data pembayaran terhapus berhasil diambil');
+    }
+
+    /**
+     * Restore soft-deleted pembayaran.
+     */
+    public function restore($id)
+    {
+        $pembayaran = Pembayaran::onlyTrashed()->findOrFail($id);
+
+        $pembayaran->restore();
+
+        return $this->successResponse($pembayaran, 'Pembayaran berhasil dikembalikan (restore).');
+    }
+
+    /**
+     * Force delete pembayaran.
+     */
+    public function forceDelete($id)
+    {
+        $pembayaran = Pembayaran::onlyTrashed()->findOrFail($id);
+
+        // Optional: Delete proof file
+        if ($pembayaran->bukti_bayar_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($pembayaran->bukti_bayar_path)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($pembayaran->bukti_bayar_path);
+        }
+
+        $pembayaran->forceDelete();
+
+        return $this->successResponse(null, 'Pembayaran berhasil dihapus permanen.');
     }
 }

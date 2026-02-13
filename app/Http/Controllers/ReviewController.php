@@ -168,7 +168,64 @@ class ReviewController extends Controller
      */
     public function destroy(Review $review)
     {
-        //
+        $review->delete();
+        return $this->successResponse(null, 'Review berhasil dihapus (soft delete)');
+    }
+
+    /**
+     * Get soft-deleted reviews.
+     */
+    public function trashed()
+    {
+        $reviews = Review::onlyTrashed()
+            ->with([
+                'pemesanan' => function ($query) {
+                    $query->withTrashed()->with('user');
+                }
+            ])
+            ->latest('deleted_at')
+            ->get();
+
+        // Map format agar sesuai dengan frontend
+        $formattedReviews = $reviews->map(function ($review) {
+            return [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'komentar' => $review->komentar,
+                'status' => $review->status,
+                'tanggal' => $review->created_at->format('d F Y'),
+                'deleted_at' => $review->deleted_at->format('d F Y H:i'),
+                'user' => [
+                    'name' => $review->pemesanan->user->name ?? 'Pelanggan',
+                ]
+            ];
+        });
+
+        return $this->successResponse($formattedReviews, 'Data review terhapus berhasil diambil');
+    }
+
+    /**
+     * Restore soft-deleted review.
+     */
+    public function restore($id)
+    {
+        $review = Review::onlyTrashed()->findOrFail($id);
+
+        $review->restore();
+
+        return $this->successResponse($review, 'Review berhasil dikembalikan (restore).');
+    }
+
+    /**
+     * Force delete review.
+     */
+    public function forceDelete($id)
+    {
+        $review = Review::onlyTrashed()->findOrFail($id);
+
+        $review->forceDelete();
+
+        return $this->successResponse(null, 'Review berhasil dihapus permanen.');
     }
 
 

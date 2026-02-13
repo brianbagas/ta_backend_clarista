@@ -12,6 +12,18 @@ class PromoController extends Controller
 {
     use ApiResponseTrait;
 
+    /**
+     * Get soft-deleted promos.
+     */
+    public function trashed()
+    {
+        $promos = Promo::onlyTrashed()
+            ->latest('deleted_at')
+            ->get();
+
+        return $this->successResponse($promos, 'Data promo terhapus berhasil diambil');
+    }
+
     public function latest()
     {
         // Mengambil 3 promo terbaru
@@ -98,20 +110,30 @@ class PromoController extends Controller
         $promo = Promo::find($promo_id);
 
         if (!$promo) {
-            return $this->errorResponse('Unit tidak ditemukan', 404);
+            return $this->errorResponse('Promo tidak ditemukan', 404);
         }
         $promo->delete();
 
-        return $this->successResponse(['data_id' => $promo->id], 'Unit berhasil dihapus sementara (Soft Delete).');
+        return $this->successResponse(['data_id' => $promo->id], 'Promo berhasil dihapus sementara (Soft Delete).');
     }
 
-    public function destroyPermanently($id)
+    public function forceDelete($id)
     {
         // Kita harus pakai 'withTrashed()' karena data mungkin sudah di-soft delete sebelumnya
         $data = Promo::withTrashed()->find($id);
 
         if (!$data) {
             return $this->errorResponse('Data tidak ditemukan', 404);
+        }
+
+        // Safety Check: Check if promo is used in any Pemesanan
+        $isUsed = \App\Models\Pemesanan::withTrashed()->where('promo_id', $id)->exists();
+
+        if ($isUsed) {
+            return $this->errorResponse(
+                'Promo tidak dapat dihapus permanen karena pernah digunakan dalam transaksi pemesanan.',
+                409
+            );
         }
 
         // Pakai forceDelete()

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Kamar;
 use App\Models\KamarUnit;
 use App\Models\DetailPemesanan;
+use App\Models\PenempatanKamar;
 use App\Models\Pemesanan;
 use App\Models\User;
 use App\Models\Role;
@@ -43,19 +44,35 @@ class KamarAvailabilityTest extends TestCase
         // 2. Create Conflicting Booking for 2 rooms on Feb 1-3
         $booking = Pemesanan::factory()->create([
             'user_id' => $this->user->id,
-            'tanggal_check_in' => '2026-02-01',
-            'tanggal_check_out' => '2026-02-03',
+            'tanggal_check_in' => Carbon::now()->addDays(1)->format('Y-m-d'),
+            'tanggal_check_out' => Carbon::now()->addDays(3)->format('Y-m-d'),
             'status_pemesanan' => 'dikonfirmasi'
         ]);
 
-        DetailPemesanan::factory()->create([
+        $detail = DetailPemesanan::factory()->create([
             'pemesanan_id' => $booking->id,
             'kamar_id' => $kamar->id_kamar,
             'jumlah_kamar' => 2
         ]);
 
+        // Create PenempatanKamar (Critical for availability check)
+        // We need to pick 2 units from the 5 created
+        $units = KamarUnit::where('kamar_id', $kamar->id_kamar)->take(2)->get();
+        foreach ($units as $unit) {
+            PenempatanKamar::create([
+                'detail_pemesanan_id' => $detail->id,
+                'kamar_unit_id' => $unit->id,
+                'tanggal_masuk' => $booking->tanggal_check_in,
+                'tanggal_keluar' => $booking->tanggal_check_out,
+                'status_penempatan' => 'assigned'
+            ]);
+        }
+
         // 3. Action: Check availability for Feb 2 (Inside the booking period)
-        $response = $this->getJson('/api/cek-ketersediaan?check_in=2026-02-02&check_out=2026-02-04');
+        // 3. Action: Check availability for (Now + 2 days) -> Inside booking period
+        $checkIn = Carbon::now()->addDays(2)->format('Y-m-d');
+        $checkOut = Carbon::now()->addDays(4)->format('Y-m-d');
+        $response = $this->getJson("/api/cek-ketersediaan?check_in={$checkIn}&check_out={$checkOut}");
 
         // 4. Assert
         $response->assertStatus(200)
@@ -73,8 +90,8 @@ class KamarAvailabilityTest extends TestCase
         // 2. Create CANCELLED Booking for 2 rooms
         $booking = Pemesanan::factory()->create([
             'user_id' => $this->user->id,
-            'tanggal_check_in' => '2026-02-01',
-            'tanggal_check_out' => '2026-02-03',
+            'tanggal_check_in' => Carbon::now()->addDays(1)->format('Y-m-d'),
+            'tanggal_check_out' => Carbon::now()->addDays(3)->format('Y-m-d'),
             'status_pemesanan' => 'batal' // Cancelled status
         ]);
 
@@ -85,7 +102,10 @@ class KamarAvailabilityTest extends TestCase
         ]);
 
         // 3. Action: Check availability
-        $response = $this->getJson('/api/cek-ketersediaan?check_in=2026-02-02&check_out=2026-02-04');
+        // 3. Action: Check availability
+        $checkIn = Carbon::now()->addDays(2)->format('Y-m-d');
+        $checkOut = Carbon::now()->addDays(4)->format('Y-m-d');
+        $response = $this->getJson("/api/cek-ketersediaan?check_in={$checkIn}&check_out={$checkOut}");
 
         // 4. Assert: Should still have 5 available (cancelled doesn't count)
         $response->assertStatus(200)

@@ -151,7 +151,7 @@
             </p>
 
             <center>
-                <a href="{{ env('FRONTEND_URL', 'http://localhost:5173') }}/booking" class="button">
+                <a href="{{ env('FRONTEND_URL', 'https://test.claristahomestay.web.id') }}/booking" class="button">
                     Pesan Lagi
                 </a>
             </center>

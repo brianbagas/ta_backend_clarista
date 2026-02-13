@@ -26,6 +26,16 @@ class KamarUnitsController extends Controller
         return $this->successResponse($units, 'List unit kamar retrieved successfully');
     }
 
+    public function indexdirty()
+    {
+        $units = KamarUnit::with('kamar')
+            ->where('status_unit', 'kotor')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        return $this->successResponse($units, 'List kamar kotor berhasil diambil');
+    }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -94,5 +104,60 @@ class KamarUnitsController extends Controller
         $kamarUnit->delete();
 
         return $this->successResponse(null, 'Unit kamar berhasil dihapus');
+    }
+
+    /**
+     * Get soft-deleted kamar units.
+     */
+    public function trashed()
+    {
+        $units = KamarUnit::onlyTrashed()
+            ->with([
+                'kamar' => function ($query) {
+                    $query->withTrashed();
+                }
+            ])
+            ->latest('deleted_at')
+            ->get();
+
+        return $this->successResponse($units, 'Data unit kamar terhapus berhasil diambil');
+    }
+
+    /**
+     * Restore soft-deleted kamar unit.
+     */
+    public function restore($id)
+    {
+        $unit = KamarUnit::onlyTrashed()->findOrFail($id);
+
+        // Check if parent Kamar is also deleted? If so, maybe warn or fail?
+        // For now, allow restore. If parent is deleted, relation will return null/empty in simple queries.
+
+        $unit->restore();
+
+        return $this->successResponse($unit, 'Unit kamar berhasil dikembalikan (restore).');
+    }
+
+    /**
+     * Force delete kamar unit.
+     */
+    public function forceDelete($id)
+    {
+        $unit = KamarUnit::onlyTrashed()->findOrFail($id);
+
+        // Safety Check: Check if this unit is used in any PenempatanKamar
+        // We use withTrashed() on PenempatanKamar just in case
+        $isUsed = \App\Models\PenempatanKamar::withTrashed()->where('kamar_unit_id', $id)->exists();
+
+        if ($isUsed) {
+            return $this->errorResponse(
+                'Unit kamar tidak dapat dihapus permanen karena ada riwayat penempatan (check-in/out) yang terkait.',
+                409
+            );
+        }
+
+        $unit->forceDelete();
+
+        return $this->successResponse(null, 'Unit kamar berhasil dihapus permanen.');
     }
 }

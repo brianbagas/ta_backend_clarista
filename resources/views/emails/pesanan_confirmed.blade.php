@@ -90,7 +90,9 @@
         <div class="content">
             <p>Halo, <strong>{{ $pemesanan->user->name }}</strong>!</p>
 
-            <p>Terima kasih telah memesan di <strong>Clarista Homestay</strong>. Kami dengan senang hati menginformasikan bahwa pesanan Anda dengan kode booking <strong>{{ $pemesanan->kode_booking }}</strong> telah <strong>DIKONFIRMASI</strong> oleh admin.</p>
+            <p>Terima kasih telah memesan di <strong>Clarista Homestay</strong>. Kami dengan senang hati
+                menginformasikan bahwa pesanan Anda dengan kode booking <strong>{{ $pemesanan->kode_booking }}</strong>
+                telah <strong>DIKONFIRMASI</strong> oleh admin.</p>
 
             <div class="success-box">
                 <strong>🎉 Pembayaran Berhasil Diverifikasi!</strong><br>
@@ -122,11 +124,14 @@
                 </tr>
                 <tr>
                     <td>Total Bayar</td>
-                    <td><strong style="color: #4CAF50;">Rp {{ number_format($pemesanan->total_bayar, 0, ',', '.') }}</strong></td>
+                    <td><strong style="color: #4CAF50;">Rp
+                            {{ number_format($pemesanan->total_bayar, 0, ',', '.') }}</strong></td>
                 </tr>
                 <tr>
                     <td>Status</td>
-                    <td><span style="background-color: #4CAF50; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">{{ ucfirst(str_replace('_', ' ', $pemesanan->status_pemesanan)) }}</span></td>
+                    <td><span
+                            style="background-color: #4CAF50; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px;">{{ ucfirst(str_replace('_', ' ', $pemesanan->status_pemesanan)) }}</span>
+                    </td>
                 </tr>
             </table>
 
@@ -139,11 +144,13 @@
             </div>
 
             <p style="margin-top: 30px;">
-                Kami tunggu kedatangan Anda di Clarista Homestay. Jika ada pertanyaan, jangan ragu untuk menghubungi kami.
+                Kami tunggu kedatangan Anda di Clarista Homestay. Jika ada pertanyaan, jangan ragu untuk menghubungi
+                kami.
             </p>
 
             <center>
-                <a href="{{ env('FRONTEND_URL', 'http://localhost:5173') }}/customer/riwayat-pemesanan" class="button">
+                <a href="{{ env('FRONTEND_URL', 'https://test.claristahomestay.web.id') }}/customer/riwayat-pemesanan"
+                    class="button">
                     Lihat Detail Pesanan
                 </a>
             </center>

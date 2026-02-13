@@ -170,7 +170,8 @@
             @endif
 
             <center>
-                <a href="{{ env('FRONTEND_URL', 'http://localhost:5173') }}/customer/riwayat-pemesanan" class="button">
+                <a href="{{ env('FRONTEND_URL', 'https://test.claristahomestay.web.id') }}/customer/riwayat-pemesanan"
+                    class="button">
                     📤 Upload Bukti Bayar Ulang
                 </a>
             </center>

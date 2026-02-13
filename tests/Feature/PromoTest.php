@@ -27,7 +27,7 @@ class PromoTest extends TestCase
             'min_transaksi' => 500000
         ]);
 
-        $response = $this->postJson('/api/cek-promo', [
+        $response = $this->postJson('/api/promo/check', [
             'kode_promo' => 'DISKON50',
             'total_transaksi' => 1000000
         ]);
@@ -57,7 +57,7 @@ class PromoTest extends TestCase
             'kuota_terpakai' => 0
         ]);
 
-        $response = $this->postJson('/api/cek-promo', [
+        $response = $this->postJson('/api/promo/check', [
             'kode_promo' => 'EXPIRED',
             'total_transaksi' => 1000000
         ]);
@@ -83,7 +83,7 @@ class PromoTest extends TestCase
             'kuota_terpakai' => 0
         ]);
 
-        $response = $this->postJson('/api/cek-promo', [
+        $response = $this->postJson('/api/promo/check', [
             'kode_promo' => 'INACTIVE',
             'total_transaksi' => 1000000
         ]);
@@ -107,7 +107,7 @@ class PromoTest extends TestCase
             'min_transaksi' => 1000000
         ]);
 
-        $response = $this->postJson('/api/cek-promo', [
+        $response = $this->postJson('/api/promo/check', [
             'kode_promo' => 'DISKON50',
             'total_transaksi' => 500000 // Below minimum
         ]);
@@ -130,7 +130,7 @@ class PromoTest extends TestCase
             'kuota_terpakai' => 10 // Full
         ]);
 
-        $response = $this->postJson('/api/cek-promo', [
+        $response = $this->postJson('/api/promo/check', [
             'kode_promo' => 'DISKON50',
             'total_transaksi' => 1000000
         ]);
@@ -155,7 +155,7 @@ class PromoTest extends TestCase
             'is_active' => true
         ]);
 
-        $response = $this->postJson('/api/cek-promo', [
+        $response = $this->postJson('/api/promo/check', [
             'kode_promo' => 'PERSEN15',
             'total_transaksi' => 1000000
         ]);
@@ -185,7 +185,7 @@ class PromoTest extends TestCase
             'kuota_terpakai' => 100
         ]);
 
-        $response = $this->postJson('/api/cek-promo', [
+        $response = $this->postJson('/api/promo/check', [
             'kode_promo' => 'UNLIMITED',
             'total_transaksi' => 1000000
         ]);

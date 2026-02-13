@@ -69,4 +69,40 @@ class BankAccountController extends Controller
         $bankAccount->delete(); // Soft delete
         return $this->successResponse(null, 'Rekening bank berhasil dihapus (soft delete)');
     }
+
+    /**
+     * Get soft-deleted bank accounts.
+     */
+    public function trashed()
+    {
+        $banks = BankAccount::onlyTrashed()
+            ->latest('deleted_at')
+            ->get();
+
+        return $this->successResponse($banks, 'Data rekening bank terhapus berhasil diambil');
+    }
+
+    /**
+     * Restore soft-deleted bank account.
+     */
+    public function restore($id)
+    {
+        $bank = BankAccount::onlyTrashed()->findOrFail($id);
+
+        $bank->restore();
+
+        return $this->successResponse($bank, 'Rekening bank berhasil dikembalikan (restore).');
+    }
+
+    /**
+     * Force delete bank account.
+     */
+    public function forceDelete($id)
+    {
+        $bank = BankAccount::onlyTrashed()->findOrFail($id);
+
+        $bank->forceDelete();
+
+        return $this->successResponse(null, 'Rekening bank berhasil dihapus permanen.');
+    }
 }

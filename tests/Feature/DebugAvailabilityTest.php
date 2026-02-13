@@ -8,6 +8,7 @@ use App\Models\DetailPemesanan;
 use App\Models\Pemesanan;
 use App\Models\User;
 use App\Models\Role;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,8 +36,8 @@ class DebugAvailabilityTest extends TestCase
         // 2. Create CANCELLED Booking for 2 rooms
         $booking = Pemesanan::factory()->create([
             'user_id' => $this->user->id,
-            'tanggal_check_in' => '2026-02-01',
-            'tanggal_check_out' => '2026-02-03',
+            'tanggal_check_in' => Carbon::now()->addDays(1)->format('Y-m-d'),
+            'tanggal_check_out' => Carbon::now()->addDays(3)->format('Y-m-d'),
             'status_pemesanan' => 'batal'
         ]);
 
@@ -48,7 +49,9 @@ class DebugAvailabilityTest extends TestCase
 
         // 3. Action: Check availability
         \DB::enableQueryLog();
-        $response = $this->getJson('/api/cek-ketersediaan?check_in=2026-02-02&check_out=2026-02-04');
+        $checkIn = Carbon::now()->addDays(2)->format('Y-m-d');
+        $checkOut = Carbon::now()->addDays(4)->format('Y-m-d');
+        $response = $this->getJson("/api/cek-ketersediaan?check_in={$checkIn}&check_out={$checkOut}");
         $log = \DB::getQueryLog();
         dump($log);
 

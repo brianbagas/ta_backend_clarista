@@ -325,4 +325,68 @@ class KamarController extends Controller
             return $this->errorResponse('Gagal menghapus gambar: ' . $e->getMessage(), 500);
         }
     }
+    // --- Soft Delete Methods ---
+
+    /**
+     * Menampilkan data kamar yang sudah dihapus (soft deleted).
+     * GET /api/admin/trashed/kamar
+     */
+    public function trashed()
+    {
+        $kamars = Kamar::onlyTrashed()->with('images')->get();
+        return $this->successResponse($kamars, 'Data kamar yang dihapus berhasil ditampilkan.');
+    }
+
+    /**
+     * Mengembalikan data kamar yang sudah dihapus.
+     * POST /api/admin/trashed/kamar/{id}/restore
+     */
+    public function restore($id)
+    {
+        $kamar = Kamar::onlyTrashed()->find($id);
+
+        if (!$kamar) {
+            return $this->errorResponse('Data kamar tidak ditemukan di sampah.', 404);
+        }
+
+        $kamar->restore();
+        return $this->successResponse($kamar, 'Data kamar berhasil dipulihkan.');
+    }
+
+    /**
+     * Menghapus data kamar secara permanen.
+     * DELETE /api/admin/trashed/kamar/{id}
+     */
+    public function forceDelete($id)
+    {
+        $kamar = Kamar::onlyTrashed()->with('images')->find($id);
+
+        if (!$kamar) {
+            return $this->errorResponse('Data kamar tidak ditemukan di sampah.', 404);
+        }
+
+        // Safety Check: Jangan hapus jika ada riwayat pemesanan
+        if (DetailPemesanan::where('kamar_id', $kamar->id_kamar)->exists()) {
+            return $this->errorResponse('Tidak dapat menghapus permanen: Kamar ini memiliki riwayat pemesanan.', 409);
+        }
+
+        try {
+            // Hapus gambar fisik
+            if ($kamar->images) {
+                foreach ($kamar->images as $img) {
+                    $relativePath = str_replace('storage/', '', $img->image_path);
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($relativePath)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($relativePath);
+                    }
+                    $img->delete();
+                }
+            }
+
+            $kamar->forceDelete();
+            return $this->successResponse(null, 'Data kamar berhasil dihapus permanen.');
+
+        } catch (\Exception $e) {
+            return $this->errorResponse('Gagal menghapus permanen: ' . $e->getMessage(), 500);
+        }
+    }
 }

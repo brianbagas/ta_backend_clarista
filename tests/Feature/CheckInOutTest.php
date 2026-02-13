@@ -139,10 +139,10 @@ class CheckInOutTest extends TestCase
             PenempatanKamar::find($this->penempatanKamar->id)->check_out_aktual
         );
 
-        // Unit should be in maintenance
+        // Unit should be in kotor status
         $this->assertDatabaseHas('kamar_units', [
             'id' => $this->kamarUnit->id,
-            'status_unit' => 'maintenance'
+            'status_unit' => 'kotor'
         ]);
     }
 

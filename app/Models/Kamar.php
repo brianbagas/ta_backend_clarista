@@ -48,29 +48,57 @@ class Kamar extends Model
         return asset('images/default-room.jpg');
     }
 
-    public function getAvailableStock($checkIn, $checkOut)
+    /**
+     * Get occupied unit IDs for a given date range.
+     */
+    public function getOccupiedUnitIds($checkIn, $checkOut)
     {
-        // Gunakan primary key yang benar: id_kamar
-        $bookedCount = DetailPemesanan::where('kamar_id', $this->id_kamar)
+        // Pastikan format Carbon
+        $checkIn = \Carbon\Carbon::parse($checkIn);
+        $checkOut = \Carbon\Carbon::parse($checkOut);
 
-            // Asumsi nama relasi di model Detail ke Booking adalah 'pemesanan'
-            ->whereHas('pemesanan', function ($query) use ($checkIn, $checkOut) {
-
-                // Filter status & tanggal di tabel INDUK (Pemesanan/Booking)
-                $query->where('status_pemesanan', '!=', 'batal')
-                    ->where(function ($qDate) use ($checkIn, $checkOut) {
-                    $qDate->where('tanggal_check_in', '<', $checkOut)
+        return PenempatanKamar::whereHas('detailPemesanan.pemesanan', function ($q) use ($checkIn, $checkOut) {
+            $q->where('status_pemesanan', '!=', 'batal')
+                ->where(function ($query) use ($checkIn, $checkOut) {
+                    $query->where('tanggal_check_in', '<', $checkOut)
                         ->where('tanggal_check_out', '>', $checkIn);
                 });
-            })
+        })
+            ->whereNotIn('status_penempatan', ['cancelled', 'checked_out'])
+            ->pluck('kamar_unit_id');
+    }
 
-            // PENTING: Gunakan 'jumlah_kamar' (sesuai gambar tabelmu)
-            ->sum('jumlah_kamar');
+    /**
+     * Get specific available units for booking.
+     * Optionally lock for update to prevent race conditions.
+     */
+    public function getAvailableUnits($checkIn, $checkOut, $qty, $lock = false)
+    {
+        $occupiedUnitIds = $this->getOccupiedUnitIds($checkIn, $checkOut);
 
-        // Hitung Sisa
-        $sisa = $this->jumlah_total - $bookedCount;
+        $query = KamarUnit::where('kamar_id', $this->id_kamar)
+            ->where('status_unit', 'available')
+            ->whereNotIn('id', $occupiedUnitIds)
+            ->take($qty);
 
-        return max($sisa, 0);
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get total available stock count.
+     */
+    public function getAvailableStock($checkIn, $checkOut)
+    {
+        $occupiedUnitIds = $this->getOccupiedUnitIds($checkIn, $checkOut);
+
+        return KamarUnit::where('kamar_id', $this->id_kamar)
+            ->where('status_unit', 'available')
+            ->whereNotIn('id', $occupiedUnitIds)
+            ->count();
     }
 
 }

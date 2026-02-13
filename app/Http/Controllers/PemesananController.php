@@ -77,23 +77,7 @@ class PemesananController extends Controller
             foreach ($validated['kamars'] as $item) {
                 $kamar = Kamar::findOrFail($item['kamar_id']);
 
-                $occupiedUnitIds = PenempatanKamar::whereHas('detailPemesanan.pemesanan', function ($q) use ($checkIn, $checkOut) {
-                    $q->where('status_pemesanan', '!=', 'batal')
-                        ->where(function ($query) use ($checkIn, $checkOut) {
-                            $query->where('tanggal_check_in', '<', $checkOut)
-                                ->where('tanggal_check_out', '>', $checkIn);
-                        });
-                })
-                    ->whereNotIn('status_penempatan', ['cancelled', 'checked_out']) // PENTING: Exclude penempatan yang dibatalkan/selesai
-                    ->pluck('kamar_unit_id');
-
-
-                $availableUnits = KamarUnit::where('kamar_id', $kamar->id_kamar)
-                    ->where('status_unit', 'available')
-                    ->whereNotIn('id', $occupiedUnitIds)
-                    ->take($item['jumlah_kamar'])
-                    ->lockForUpdate()
-                    ->get();
+                $availableUnits = $kamar->getAvailableUnits($checkIn, $checkOut, $item['jumlah_kamar'], true);
 
 
                 if ($availableUnits->count() < $item['jumlah_kamar']) {
@@ -217,7 +201,7 @@ class PemesananController extends Controller
     public function indexOwner()
     {
         // Ambil semua pemesanan owner
-        $pemesanans = Pemesanan::with(['user', 'detailPemesanans.penempatanKamars'])
+        $pemesanans = Pemesanan::with(['user', 'detailPemesanans.penempatanKamars', 'pembayaran'])
             ->latest()
             ->get();
 
@@ -421,23 +405,8 @@ class PemesananController extends Controller
                 foreach ($request->kamars as $item) {
                     $kamar = Kamar::findOrFail($item['kamar_id']);
 
-                    // Cek ketersediaan unit menggunakan pattern yang sama dengan store()
-                    $occupiedUnitIds = PenempatanKamar::whereHas('detailPemesanan.pemesanan', function ($q) use ($checkInDate, $checkOutDate) {
-                        $q->where('status_pemesanan', '!=', 'batal')
-                            ->where(function ($query) use ($checkInDate, $checkOutDate) {
-                                $query->where('tanggal_check_in', '<', $checkOutDate)
-                                    ->where('tanggal_check_out', '>', $checkInDate);
-                            });
-                    })
-                        ->whereNotIn('status_penempatan', ['cancelled', 'checked_out'])
-                        ->pluck('kamar_unit_id');
-
-                    $availableUnits = KamarUnit::where('kamar_id', $kamar->id_kamar)
-                        ->where('status_unit', 'available')
-                        ->whereNotIn('id', $occupiedUnitIds)
-                        ->take($item['jumlah_kamar'])
-                        ->lockForUpdate()
-                        ->get();
+                    // Cek ketersediaan unit menggunakan method di Model Kamar
+                    $availableUnits = $kamar->getAvailableUnits($checkInDate, $checkOutDate, $item['jumlah_kamar'], true);
 
                     if ($availableUnits->count() < $item['jumlah_kamar']) {
                         throw new \Exception("Stok kamar \"{$kamar->nama_kamar}\" tidak mencukupi. Hanya tersedia " . $availableUnits->count() . " unit.");
@@ -579,4 +548,100 @@ class PemesananController extends Controller
         }
     }
 
+    /**
+     * Get soft-deleted pemesanans.
+     */
+    public function trashed()
+    {
+        $pemesanans = Pemesanan::onlyTrashed()
+            ->with([
+                'user',
+                'detailPemesanans' => function ($query) {
+                    // Include soft-deleted details and their soft-deleted kamars
+                    $query->withTrashed()->with([
+                        'kamar' => function ($q) {
+                        $q->withTrashed();
+                    }
+                    ]);
+                }
+            ])
+            ->latest('deleted_at')
+            ->get();
+
+        return $this->successResponse($pemesanans, 'Data pemesanan terhapus berhasil diambil');
+    }
+
+    /**
+     * Restore soft-deleted pemesanan.
+     */
+    public function restore($id)
+    {
+        $pemesanan = Pemesanan::onlyTrashed()->findOrFail($id);
+
+        // Restore Pemesanan
+        $pemesanan->restore();
+
+        // Restore related soft-deleted children
+        // 1. Detail Pemesanan & Penempatan Kamar
+        foreach ($pemesanan->detailPemesanans()->onlyTrashed()->get() as $detail) {
+            $detail->restore();
+            $detail->penempatanKamars()->onlyTrashed()->restore();
+        }
+
+        // 2. Pembayaran
+        if ($pemesanan->pembayaran()->onlyTrashed()->exists()) {
+            $pemesanan->pembayaran()->onlyTrashed()->restore();
+        }
+
+        // 3. Review
+        if ($pemesanan->review()->onlyTrashed()->exists()) {
+            $pemesanan->review()->onlyTrashed()->restore();
+        }
+
+        return $this->successResponse($pemesanan, 'Pemesanan berhasil dikembalikan (restore) beserta data terkait.');
+    }
+
+    /**
+     * Force delete pemesanan.
+     */
+    public function forceDelete($id)
+    {
+        $pemesanan = Pemesanan::onlyTrashed()->findOrFail($id);
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Force delete children first
+
+            // Detail & Penempatan
+            foreach ($pemesanan->detailPemesanans()->withTrashed()->get() as $detail) {
+                // Hapus penempatan kamar permanen
+                $detail->penempatanKamars()->withTrashed()->forceDelete();
+                // Hapus detail permanen
+                $detail->forceDelete();
+            }
+
+            // Pembayaran
+            if ($pemesanan->pembayaran()->withTrashed()->exists()) {
+                // Hapus file bukti bayar jika ada (optional, good practice)
+                // Storage::disk('public')->delete($pemesanan->pembayaran->bukti_bayar_path);
+                $pemesanan->pembayaran()->withTrashed()->forceDelete();
+            }
+
+            // Review
+            if ($pemesanan->review()->withTrashed()->exists()) {
+                $pemesanan->review()->withTrashed()->forceDelete();
+            }
+
+            // 2. Force delete Parent
+            $pemesanan->forceDelete();
+
+            DB::commit();
+            return $this->successResponse(null, 'Pemesanan dan seluruh data terkait berhasil dihapus permanen.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse('Gagal menghapus permanen pemesanan.', 500, $e->getMessage());
+        }
+    }
 }
