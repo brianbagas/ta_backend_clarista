@@ -169,8 +169,6 @@ class LaporanController extends Controller
                 $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
                 $periodeLabel = $startDate->translatedFormat('F Y');
             }
-
-
             $query = Pemesanan::select('id', 'kode_booking', 'user_id', 'tanggal_check_in', 'tanggal_check_out', 'total_bayar', 'status_pemesanan', 'created_at')
                 ->whereIn('status_pemesanan', ['dikonfirmasi', 'selesai'])
                 ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {

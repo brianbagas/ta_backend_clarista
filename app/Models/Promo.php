@@ -25,8 +25,8 @@ class Promo extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'berlaku_mulai' => 'date',
-        'berlaku_selesai' => 'date',
+        'berlaku_mulai' => 'date:Y-m-d',
+        'berlaku_selesai' => 'date:Y-m-d',
     ];
 
     protected $dates = ['deleted_at'];

@@ -70,9 +70,6 @@ class KamarUnitsController extends Controller
                 ->first();
 
             if ($lastUnit) {
-                // Mencoba mengekstrak angka dari nomor unit terakhir.
-                // Jika nomor_unit berbentuk "101", "A-01", atau "02"
-                // menggunakan regex untuk mengekstrak angka di akhir string
                 if (preg_match('/(\d+)$/', $lastUnit->nomor_unit, $matches)) {
                     $angkaDiUjung = intval($matches[1]);
                     // Cek jika angkanya lebih besar dari prefix, kurangi prefix karena polanya prefix + iterasi
