@@ -105,6 +105,10 @@ class DatabaseSeeder extends Seeder
                 'no_hp' => '089876543210',
                 'gender' => 'pria'
             ]);
+
+            User::factory()->count(10)->create([
+                'role_id' => $customerRole->id,
+            ]);
         }
 
         // Panggil Seeder untuk Kamar
@@ -113,12 +117,9 @@ class DatabaseSeeder extends Seeder
             PromoSeeder::class,
             HomestayContentSeeder::class,
             BankAccountSeeder::class,
-            KamarUnitSeeder::class, // Aman, logic manual
-            // KamarImageSeeder::class, // Menggunakan Factory, disable untuk production tanpa factory
-            // PemesananSeeder::class, // Logic kompleks/factory, disable dulu
-            // MultiPemesananSeeder::class,
-            // ReviewSeeder::class,
-            // PenempatanKamarSeeder::class,
+            PemesananSeeder::class,
+            ReviewSeeder::class,
+            // KamarUnitSeeder::class, // Aman, logic manual
         ]);
     }
 }
@@ -131,7 +132,7 @@ class HomestayContentSeeder extends Seeder
         HomestayContent::updateOrCreate(
             ['id' => 1],
             [
-                'alamat' => 'Jl. Parangtritis KM 20, Kretek, Bantul',
+                'alamat' => 'Purwomartani, Kec. Kalasan, Kabupaten Sleman, Daerah Istimewa Yogyakarta 55571',
                 'telepon' => '081234567890',
                 'email' => 'kontak@claristahomestay.com',
                 'link_gmaps' => 'https://maps.google.com/',
@@ -142,47 +143,6 @@ class HomestayContentSeeder extends Seeder
     }
 }
 
-// class PemesananManualSeeder extends Seeder
-// {
-//     public function run(): void
-//     {
-//         // 1. CARI USER TARGET YANG SUDAH ADA
-//         $customerRoleId = Role::where('role', 'customer')->value('id');
-//         $customer = User::where('role_id', $customerRoleId)->inRandomOrder()->first();
-//         // SKENARIO 1: Buat Data Booking SPESIFIK (Untuk Tes Manual Kita)
-//         // Kita akan booking Kamar ID 1 untuk 3 hari ke depan.
-//         // Jadi kalau Anda cek ketersediaan di tanggal ini, harusnya PENUH/BERKURANG.
-
-//         $kamarTarget = Kamar::first(); // Ambil kamar pertama
-
-//         if ($kamarTarget && $customer) {
-//             $bookingManual = Pemesanan::factory()->create([
-//                 // Tentukan user_id secara eksplisit
-//                 'user_id' => $customer->id, 
-
-//                 'tanggal_check_in' => Carbon::now()->addDays(2)->format('Y-m-d'),
-//                 'tanggal_check_out' => Carbon::now()->addDays(5)->format('Y-m-d'),
-//                 'status_pemesanan' => 'dikonfirmasi', // Gunakan 'dikonfirmasi' (sesuai ENUM)
-//                 'total_bayar' => 0 
-//             ]);
-
-//             // Hitung durasi dan total
-//             $durasi = 3; 
-//             $total = 1 * $kamarTarget->harga * $durasi;
-
-//             // Masukkan ke detail
-//             DetailPemesanan::create([
-//                 'pemesanan_id' => $bookingManual->id,
-//                 'kamar_id' => $kamarTarget->id_kamar,
-//                 'jumlah_kamar' => 1,
-//                 'harga_per_malam' => $kamarTarget->harga
-//             ]);
-
-//             // Update total bayar
-//             $bookingManual->update(['total_bayar' => $total]);
-//         }
-//     }
-// }
 class PemesananSeeder extends Seeder
 {
     public function run(): void
@@ -197,24 +157,15 @@ class PemesananSeeder extends Seeder
             return;
         }
 
-        $this->command->info('--- Membuat 5 Data Riwayat Masa Lalu ---');
+        $this->command->info('--- Membuat 100 Data Riwayat Masa Lalu ---');
 
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 100; $i++) {
             // 1. TANGGAL MUNDUR (1 - 60 hari ke belakang)
             $checkIn = Carbon::now()->subDays(rand(5, 60));
             $checkOut = $checkIn->copy()->addDays(rand(1, 3));
 
-            // Logika cari unit (Sama persis, copy logic Anda)
-            // ... (Logic OccupiedUnitIds Anda taruh disini) ...
-            // Agar kode ringkas, saya persingkat di sini:
             $customer = $customers->random();
             $kamarTipe = $kamars->random();
-
-            // Cek ketersediaan (Logic Anda sudah benar, pakai saja)
-            // Anggaplah $availableUnit sudah dapat unit yang available di tanggal masa lalu tsb
-            // (Pastikan tetap pakai logic whereNotIn punya Anda agar tidak bentrok)
-
-            // SAYA TULIS ULANG LOGIC ANDA BIAR JELAS:
             $occupiedUnitIds = PenempatanKamar::whereHas('detailPemesanan.pemesanan', function ($q) use ($checkIn, $checkOut) {
                 $q->where('status_pemesanan', '!=', 'batal')
                     ->where(function ($query) use ($checkIn, $checkOut) {
@@ -232,6 +183,8 @@ class PemesananSeeder extends Seeder
                 continue;
 
             DB::transaction(function () use ($customer, $kamarTipe, $availableUnit, $checkIn, $checkOut) {
+                // Buat waktu pemesanan acak 1 sampai 14 hari sebelum check-in
+                $createdAt = $checkIn->copy()->subDays(rand(1, 14));
 
                 // A. HEADER: Status PASTI 'selesai'
                 $pemesanan = Pemesanan::create([
@@ -240,6 +193,8 @@ class PemesananSeeder extends Seeder
                     'tanggal_check_out' => $checkOut,
                     'total_bayar' => $kamarTipe->harga,
                     'status_pemesanan' => 'selesai', // <--- KUNCI MASA LALU
+                    'created_at' => $createdAt,
+                    'updated_at' => $createdAt,
                 ]);
 
                 $detail = DetailPemesanan::create([
@@ -259,14 +214,19 @@ class PemesananSeeder extends Seeder
                 ]);
 
                 // C. PEMBAYARAN: Pasti Lunas
+                $tanggalKonfirmasi = $createdAt->copy()->addHours(rand(1, 24));
+                if ($tanggalKonfirmasi->greaterThan(Carbon::now())) {
+                    $tanggalKonfirmasi = Carbon::now();
+                }
+
                 Pembayaran::create([
                     'pemesanan_id' => $pemesanan->id,
                     'bukti_bayar_path' => 'dummy.jpg',
                     'jumlah_bayar' => $pemesanan->total_bayar,
                     'bank_tujuan' => ['BCA', 'Mandiri', 'BNI', 'BRI'][array_rand(['BCA', 'Mandiri', 'BNI', 'BRI'])],
                     'nama_pengirim' => $customer->name,
-                    'tanggal_bayar' => $checkIn->copy()->subDays(1),
-                    'status_verifikasi' => 'terverifikasi',
+                    'tanggal_konfirmasi' => $tanggalKonfirmasi,
+                    'status_konfirmasi' => 'terverifikasi',
                 ]);
             });
         }
@@ -313,6 +273,7 @@ class PemesananSeeder extends Seeder
                 DB::transaction(function () use ($customer, $kamarTipe, $availableUnit, $checkIn, $checkOut, $statuses) {
 
                     $statusAcak = $statuses[array_rand($statuses)];
+                    $createdAt = $checkIn->copy()->subDays(rand(1, 14));
 
                     // A. Buat Header Pemesanan
                     $pemesanan = Pemesanan::create([
@@ -321,6 +282,8 @@ class PemesananSeeder extends Seeder
                         'tanggal_check_out' => $checkOut,
                         'total_bayar' => $kamarTipe->harga, // Asumsi 1 kamar dulu biar mudah
                         'status_pemesanan' => $statusAcak,
+                        'created_at' => $createdAt,
+                        'updated_at' => $createdAt,
                     ]);
 
                     // B. Buat Detail Pemesanan
@@ -333,22 +296,28 @@ class PemesananSeeder extends Seeder
 
                     // C. PENTING: Assign Unit (Penempatan Kamar)
                     // Inilah yang membuat kamar dianggap "Terisi" oleh sistem dinamis
+                    // Perbaikan: gunakan status 'pending' agar Owner bisa menekan tombol Check-In
                     PenempatanKamar::create([
                         'detail_pemesanan_id' => $detail->id,
                         'kamar_unit_id' => $availableUnit->id,
-                        'status_penempatan' => 'assigned', // Default assigned
+                        'status_penempatan' => 'pending', // Default pending (sebelum check-in aktual)
                     ]);
 
                     // D. Buat Pembayaran Dummy (Jika bukan menunggu pembayaran)
                     if ($statusAcak !== 'menunggu_pembayaran') {
+                        $tanggalKonfirmasiUpcoming = $createdAt->copy()->addHours(rand(1, 24));
+                        if ($tanggalKonfirmasiUpcoming->greaterThan(Carbon::now())) {
+                            $tanggalKonfirmasiUpcoming = Carbon::now();
+                        }
+
                         Pembayaran::create([
                             'pemesanan_id' => $pemesanan->id,
                             'bukti_bayar_path' => 'public/bukti_pembayaran/dummy_proof.jpg',
                             'jumlah_bayar' => $pemesanan->total_bayar,
                             'bank_tujuan' => ['BCA', 'Mandiri', 'BNI', 'BRI'][array_rand(['BCA', 'Mandiri', 'BNI', 'BRI'])],
                             'nama_pengirim' => $customer->name,
-                            'tanggal_bayar' => $checkIn->copy()->subDays(rand(1, 3)),
-                            'status_verifikasi' => ($statusAcak === 'dikonfirmasi' || $statusAcak === 'selesai') ? 'terverifikasi' : 'menunggu_verifikasi',
+                            'tanggal_konfirmasi' => $tanggalKonfirmasiUpcoming,
+                            'status_konfirmasi' => ($statusAcak === 'dikonfirmasi' || $statusAcak === 'selesai') ? 'terverifikasi' : 'menunggu_konfirmasi',
                         ]);
                     }
                 });
@@ -378,27 +347,27 @@ class ReviewSeeder extends Seeder
     }
 }
 
-class KamarUnitSeeder extends Seeder
-{
-    public function run(): void
-    {
-        $kamarTypes = Kamar::all();
-        $unitCounter = 101; // Mulai penomoran kamar dari 101
+// class KamarUnitSeeder extends Seeder
+// {
+//     public function run(): void
+//     {
+//         $kamarTypes = Kamar::all();
+//         $unitCounter = 101; // Mulai penomoran kamar dari 101
 
-        foreach ($kamarTypes as $kamar) {
+//         foreach ($kamarTypes as $kamar) {
 
-            // Loop sejumlah total kamar fisik yang dimiliki tipe ini
-            for ($i = 0; $i < $kamar->jumlah_total; $i++) {
+//             // Loop sejumlah total kamar fisik yang dimiliki tipe ini
+//             for ($i = 0; $i < $kamar->jumlah_total; $i++) {
 
-                KamarUnit::create([
-                    'kamar_id' => $kamar->id_kamar,
-                    'nomor_unit' => (string) $unitCounter++, // Nomor 101, 102, 103, dst
-                    'status_unit' => 'available',
-                ]);
-            }
-        }
-    }
-}
+//                 KamarUnit::create([
+//                     'kamar_id' => $kamar->id_kamar,
+//                     'nomor_unit' => (string) $unitCounter++, // Nomor 101, 102, 103, dst
+//                     'status_unit' => 'available',
+//                 ]);
+//             }
+//         }
+//     }
+// }
 
 class MultiPemesananSeeder extends Seeder
 {
@@ -509,14 +478,19 @@ class MultiPemesananSeeder extends Seeder
 
                     // D. Pembayaran
                     if ($statusPemesanan !== 'menunggu_pembayaran') {
+                        $tanggalKonfirmasiMulti = $checkIn->copy()->subDays(rand(1, 3));
+                        if ($tanggalKonfirmasiMulti->greaterThan(Carbon::now())) {
+                            $tanggalKonfirmasiMulti = Carbon::now();
+                        }
+
                         Pembayaran::create([
                             'pemesanan_id' => $pemesanan->id,
                             'bukti_bayar_path' => 'public/bukti_pembayaran/dummy_multi.jpg',
                             'jumlah_bayar' => $totalHarga,
                             'bank_tujuan' => ['BCA', 'Mandiri', 'BNI', 'BRI'][array_rand(['BCA', 'Mandiri', 'BNI', 'BRI'])],
                             'nama_pengirim' => $customer->name,
-                            'tanggal_bayar' => $checkIn->copy()->subDays(rand(1, 3)),
-                            'status_verifikasi' => ($statusPemesanan == 'dikonfirmasi' || $statusPemesanan == 'selesai') ? 'terverifikasi' : 'menunggu_verifikasi',
+                            'tanggal_konfirmasi' => $tanggalKonfirmasiMulti,
+                            'status_konfirmasi' => ($statusPemesanan == 'dikonfirmasi' || $statusPemesanan == 'selesai') ? 'terverifikasi' : 'menunggu_konfirmasi',
                         ]);
                     }
                 });

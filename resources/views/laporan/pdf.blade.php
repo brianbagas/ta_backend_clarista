@@ -162,7 +162,7 @@
                     <tr>
                         <td>{{ $item->kode_booking }}</td>
                         <td>{{ $item->user ? $item->user->name : 'N/A' }}</td>
-                        <td>{{ $item->pembayaran ? \Carbon\Carbon::parse($item->pembayaran->tanggal_bayar)->format('d/m/Y') : '-' }}
+                        <td>{{ $item->pembayaran ? \Carbon\Carbon::parse($item->pembayaran->tanggal_konfirmasi)->format('d/m/Y') : '-' }}
                         </td>
                         <td>{{ \Carbon\Carbon::parse($item->tanggal_check_in)->format('d/m/Y') }}</td>
                         <td>{{ \Carbon\Carbon::parse($item->tanggal_check_out)->format('d/m/Y') }}</td>

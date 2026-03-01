@@ -44,63 +44,74 @@ class PembayaranController extends Controller
             'catatan_admin' => 'nullable|string',
         ]);
 
-        if ($validated['status'] === 'dikonfirmasi') {
-            $pemesanan->update([
-                'status_pemesanan' => 'dikonfirmasi',
-                'catatan' => $validated['catatan_admin'] ?? null,
-            ]);
-        } else {
-            $catatan = $validated['catatan_admin'] ?? 'Bukti pembayaran tidak valid.';
+        DB::beginTransaction();
+        try {
+            if ($validated['status'] === 'dikonfirmasi') {
+                $pemesanan->update([
+                    'status_pemesanan' => 'dikonfirmasi',
+                    'catatan' => $validated['catatan_admin'] ?? null,
+                ]);
 
-            $pemesanan->update([
-                'status_pemesanan' => 'batal',
-                'catatan' => $catatan,
-                'alasan_batal' => $catatan,
-                'dibatalkan_oleh' => 'owner',
-                'dibatalkan_at' => now(),
-            ]);
+                if ($pemesanan->pembayaran) {
+                    $pemesanan->pembayaran()->update(['status_konfirmasi' => 'Dikonfirmasi']);
+                }
+            } else {
+                $catatan = $validated['catatan_admin'] ?? 'Bukti pembayaran tidak valid.';
 
-
-            foreach ($pemesanan->detailPemesanans as $detail) {
-                $detail->penempatanKamars()->update([
-                    'status_penempatan' => 'cancelled',
+                $pemesanan->update([
+                    'status_pemesanan' => 'batal',
+                    'catatan' => $catatan,
+                    'alasan_batal' => $catatan,
                     'dibatalkan_oleh' => 'owner',
                     'dibatalkan_at' => now(),
-                    'catatan' => 'Payment rejected by Owner. Reason: ' . $catatan
                 ]);
-            }
 
-            // Release promo quota if used
-            if ($pemesanan->promo_id) {
-                $promo = Promo::find($pemesanan->promo_id);
-                if ($promo) {
-                    $promo->decrement('kuota_terpakai');
+                if ($pemesanan->pembayaran) {
+                    $pemesanan->pembayaran()->update(['status_konfirmasi' => 'ditolak']);
+                }
+                foreach ($pemesanan->detailPemesanans as $detail) {
+                    $detail->penempatanKamars()->update([
+                        'status_penempatan' => 'cancelled',
+                        'dibatalkan_oleh' => 'owner',
+                        'dibatalkan_at' => now(),
+                        'catatan' => 'Payment rejected by Owner. Reason: ' . $catatan
+                    ]);
+                }
+                // Release kuota promo
+                if ($pemesanan->promo_id) {
+                    $promo = Promo::find($pemesanan->promo_id);
+                    if ($promo) {
+                        $promo->decrement('kuota_terpakai');
+                    }
                 }
             }
-        }
 
-        // Kirim email sesuai status
-        try {
-            if ($pemesanan->user && $pemesanan->user->email) {
-                if ($validated['status'] === 'dikonfirmasi') {
-                    // Pembayaran dikonfirmasi
-                    Mail::to($pemesanan->user->email)->send(new PesananDikonfirmasi($pemesanan));
-                } else {
-                    // Pembayaran ditolak (status 'batal')
-                    $catatanAdmin = $validated['catatan_admin'] ?? 'Bukti pembayaran tidak valid. Silakan upload ulang dengan bukti yang jelas.';
-                    Mail::to($pemesanan->user->email)->send(new PembayaranDitolak($pemesanan, $catatanAdmin));
+            DB::commit();
+
+            try {
+                if ($pemesanan->user && $pemesanan->user->email) {
+                    if ($validated['status'] === 'dikonfirmasi') {
+                        Mail::to($pemesanan->user->email)->send(new PesananDikonfirmasi($pemesanan));
+                    } else {
+                        $catatanAdmin = $validated['catatan_admin'] ?? 'Bukti pembayaran tidak valid. Silakan upload ulang dengan bukti yang jelas.';
+                        Mail::to($pemesanan->user->email)->send(new PembayaranDitolak($pemesanan, $catatanAdmin));
+                    }
                 }
+            } catch (\Exception $e) {
+                Log::error('Gagal kirim email verifikasi: ' . $e->getMessage());
             }
+
+            return $this->successResponse($pemesanan, 'Status pemesanan berhasil diubah menjadi ' . $validated['status']);
         } catch (\Exception $e) {
-            Log::error('Gagal kirim email verifikasi: ' . $e->getMessage());
+            DB::rollBack();
+            Log::error('Gagal verifikasi pembayaran: ' . $e->getMessage());
+            return $this->errorResponse('Terjadi kesalahan saat memproses verifikasi.', 500);
         }
-
-        return $this->successResponse($pemesanan, 'Status pemesanan berhasil diubah menjadi ' . $validated['status']);
     }
 
     public function showVerificationDetail(Pemesanan $pemesanan)
     {
-        // Pastikan relasi pembayaran diload
+
         $pemesanan->load(['user', 'detailPemesanans.kamar', 'pembayaran', 'detailPemesanans.penempatanKamars.kamarUnit']);
 
         return $this->successResponse($pemesanan, 'Detail verifikasi berhasil diambil.');
@@ -119,25 +130,21 @@ class PembayaranController extends Controller
      */
     public function store(Request $request, Pemesanan $pemesanan)
     {
-        // 1. Otorisasi
+
         if (Auth::id() !== $pemesanan->user_id) {
             return $this->errorResponse('Akses ditolak.', 403);
         }
-
         if ($pemesanan->status_pemesanan !== 'menunggu_pembayaran') {
             return $this->errorResponse('Pembayaran tidak dapat diproses untuk status pesanan ini.', 400);
         }
-
-        // 2. Validasi
         $validated = $request->validate([
             'bukti_bayar' => 'required|image|mimes:jpg,jpeg,png|max:2048',
             'jumlah_bayar' => 'required|numeric|min:0',
             'bank_tujuan' => 'nullable|string|max:50',
             'nama_pengirim' => 'nullable|string|max:100',
-            // tanggal_bayar dihapus dari validasi - diisi otomatis oleh server
-        ]);
 
-        // 3. Validasi jumlah bayar
+        ]);
+        // Validasi jumlah bayar
         if ($validated['jumlah_bayar'] != $pemesanan->total_bayar) {
             return $this->errorResponse(
                 'Jumlah pembayaran tidak sesuai. Harap transfer sejumlah Rp ' .
@@ -145,43 +152,40 @@ class PembayaranController extends Controller
                 422
             );
         }
-
-        // 4. Simpan File Bukti Bayar
         $path = $request->file('bukti_bayar')->store('bukti_pembayaran', 'public');
-
-        // 5. Buat record pembayaran baru dengan detail lengkap
-        Pembayaran::create([
-            'pemesanan_id' => $pemesanan->id,
-            'bukti_bayar_path' => $path,
-            'jumlah_bayar' => $validated['jumlah_bayar'],
-            'bank_tujuan' => $validated['bank_tujuan'],
-            'nama_pengirim' => $validated['nama_pengirim'],
-            'tanggal_bayar' => now(), // Otomatis dari server, bukan input customer
-        ]);
-
-        // 6. Update status pesanan utama
-        $pemesanan->update(['status_pemesanan' => 'menunggu_konfirmasi']);
-
-        // 7. Notifikasi Email ke Owner
+        DB::beginTransaction();
         try {
-            $pemesanan->load('pembayaran'); // Pastikan relasi pembayaran termuat
-
-            // Ambil email owner dari database (User dengan role 'owner')
-            // Asumsi: Ada relasi 'role' di User model dan tabel roles punya kolom 'role' (bukan name)
-            $ownerEmail = User::whereHas('role', function ($q) {
-                $q->where('role', 'owner');
-            })->value('email');
-
-            // Fallback jika tidak ada owner di DB (untuk safety)
-            $recipient = $ownerEmail ?: 'owner@clarista.com';
-
-            Mail::to($recipient)->send(new PembayaranMasuk($pemesanan));
+            Pembayaran::create([
+                'pemesanan_id' => $pemesanan->id,
+                'bukti_bayar_path' => $path,
+                'jumlah_bayar' => $validated['jumlah_bayar'],
+                'bank_tujuan' => $validated['bank_tujuan'],
+                'nama_pengirim' => $validated['nama_pengirim'],
+                'tanggal_konfirmasi' => now(),
+            ]);
+            $pemesanan->update(['status_pemesanan' => 'menunggu_konfirmasi']);
+            DB::commit();
+            // Notifikasi email ke owner
+            try {
+                $pemesanan->load('pembayaran');
+                $ownerEmail = User::whereHas('role', function ($q) {
+                    $q->where('role', 'owner');
+                })->value('email');
+                $recipient = $ownerEmail ?: 'owner@clarista.com';
+                Mail::to($recipient)->send(new PembayaranMasuk($pemesanan));
+            } catch (\Exception $e) {
+                Log::error('Gagal kirim email notifikasi pembayaran owner: ' . $e->getMessage());
+            }
+            return $this->successResponse(null, 'Bukti pembayaran berhasil diunggah. Menunggu konfirmasi dari admin.', 200);
         } catch (\Exception $e) {
-
-            Log::error('Gagal kirim email notifikasi pembayaran owner: ' . $e->getMessage());
+            DB::rollBack();
+            // Clean up uploaded file if DB fails
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+            }
+            Log::error('Gagal unggah pembayaran: ' . $e->getMessage());
+            return $this->errorResponse('Terjadi kesalahan saat memproses data.', 500);
         }
-
-        return $this->successResponse(null, 'Bukti pembayaran berhasil diunggah. Menunggu konfirmasi dari admin.', 200);
     }
 
     /**
@@ -258,7 +262,7 @@ class PembayaranController extends Controller
     {
         $pembayaran = Pembayaran::onlyTrashed()->findOrFail($id);
 
-        // Optional: Delete proof file
+
         if ($pembayaran->bukti_bayar_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($pembayaran->bukti_bayar_path)) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($pembayaran->bukti_bayar_path);
         }

@@ -15,14 +15,15 @@ class HandleExpiredBookings extends Command
 
     public function handle()
     {
-        // Cari pesanan yang statusnya menunggu & waktunya sudah lewat
+
         $expiredBookings = Pemesanan::where('status_pemesanan', 'menunggu_pembayaran')
             ->where('expired_at', '<', Carbon::now())
             ->get();
 
+        /** @var Pemesanan $booking */
         foreach ($expiredBookings as $booking) {
             DB::transaction(function () use ($booking) {
-                // 1. Ubah status jadi Batal
+                // Update status
                 $booking->update([
                     'status_pemesanan' => 'batal',
                     'dibatalkan_oleh' => 'system',
@@ -30,26 +31,22 @@ class HandleExpiredBookings extends Command
                     'catatan' => 'Otomatis dibatalkan oleh sistem (Expired)'
                 ]);
 
-                // 2. KEMBALIKAN KUOTA PROMO (Decrement)
+                // Kembalikan kuota promo
                 if ($booking->promo_id) {
                     Promo::where('id', $booking->promo_id)->decrement('kuota_terpakai');
                 }
 
-                // 3. (Opsional) Lepaskan unit kamar di tabel penempatan_kamar
-                // Agar kamar bisa dibooking orang lain lagi
-                // $booking->detailPemesanans->each(function($detail){ ... });
+                // Update penempatan kamar
                 $booking->detailPemesanans->each(function ($detail) {
 
-                    // Update status semua unit yang terkait dengan detail ini menjadi 'cancelled'
-                    // Pastikan kolom 'status_penempatan' ada di tabel penempatan_kamars
+
                     $detail->penempatanKamars()->update([
                         'status_penempatan' => 'cancelled',
                         'catatan' => 'Dibatalkan otomatis oleh sistem (Expired)',
                         'dibatalkan_oleh' => 'system'
                     ]);
 
-                    // ALTERNATIF: Jika Anda lebih suka menghapus datanya (Hard Delete)
-                    // $detail->penempatanKamars()->delete();
+
                 });
 
             });

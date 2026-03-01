@@ -22,7 +22,7 @@ class ReviewFactory extends Factory
             'pemesanan_id' => Pemesanan::factory(),
             'rating' => fake()->numberBetween(3, 5),
             'komentar' => fake()->paragraph(),
-            'status' => fake()->randomElement(['disetujui', 'menunggu_persetujuan']),
+            'status' => fake()->randomElement(['setujui', 'menunggu_persetujuan', 'sembunyikan']),
         ];
     }
 }

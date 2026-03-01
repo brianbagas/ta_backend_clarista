@@ -29,7 +29,7 @@ class LaporanController extends Controller
         $rooms = KamarUnit::select('id', 'nomor_unit')->get();
 
         // 3. Query Booking
-        $bookings = PenempatanKamar::with('user')
+        $bookings = PenempatanKamar::with('detailPemesanan.pemesanan.user')
             ->where(function ($query) use ($startDate, $endDate) {
                 $query->where('check_in_aktual', '<=', $endDate)
                     ->where(function ($q) use ($startDate) {
@@ -46,8 +46,7 @@ class LaporanController extends Controller
             return [
                 'id' => $item->id,
                 'kamar_unit_id' => $item->kamar_unit_id,
-                // Sekarang akses $item->user tidak akan melakukan query baru lagi
-                'nama_tamu' => $item->user ? $item->user->name : 'Tamu Umum',
+                'nama_tamu' => $item->detailPemesanan?->pemesanan?->user?->name ?? 'Tamu Umum',
 
                 'check_in_aktual' => Carbon::parse($item->check_in_aktual)->format('Y-m-d'),
 
@@ -72,7 +71,6 @@ class LaporanController extends Controller
 
     public function index(Request $request)
     {
-        // 1. Ambil input filter (Prioritas: Date Range, Fallback: Bulan ini)
         if ($request->has(['start_date', 'end_date'])) {
             $startDate = Carbon::parse($request->start_date)->startOfDay();
             $endDate = Carbon::parse($request->end_date)->endOfDay();
@@ -84,16 +82,14 @@ class LaporanController extends Controller
             $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
             $periodeLabel = $startDate->translatedFormat('F Y');
         }
-
-
         $query = Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])
-            ->whereBetween('created_at', [$startDate, $endDate]);
+            ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('tanggal_konfirmasi', [$startDate, $endDate]);
+            });
 
-        // 3. Hitung Agregasi
         $totalPendapatan = $query->sum('total_bayar');
         $jumlahTransaksi = $query->count();
 
-        // 4. Ambil Detail Transaksi
         $detailTransaksi = $query->with(['user', 'pembayaran'])->orderBy('tanggal_check_in', 'asc')->get();
 
         return $this->successResponse([
@@ -115,9 +111,13 @@ class LaporanController extends Controller
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        // 1. TOTAL PENDAPATAN (Income) - Based on Created Date (cocok dengan Laporan)
-        $paidBookingsQuery = Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])
-            ->whereBetween('created_at', [$startDate, $endDate]);
+        // 1. TOTAL PENDAPATAN (Income) - Berdasarkan Tanggal Konfirmasi Pembayaran
+        $paidBookingsQuery = Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'selesai'])
+            ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {
+                // Asumsikan status_konfirmasi terverifikasi / tanggal_konfirmasi valid
+                $q->whereBetween('tanggal_konfirmasi', [$startDate, $endDate])
+                    ->whereNotNull('tanggal_konfirmasi');
+            });
 
         $incomeMonth = (int) $paidBookingsQuery->sum('total_bayar');
 
@@ -131,13 +131,13 @@ class LaporanController extends Controller
         $lunasCount = (clone $monthlyBookingsQuery)->whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])->count();
         $cancelledCount = (clone $monthlyBookingsQuery)->where('status_pemesanan', 'batal')->count();
         $newCount = (clone $monthlyBookingsQuery)->where('status_pemesanan', 'menunggu_pembayaran')->count();
-        $pendingVerifMonth = (clone $monthlyBookingsQuery)->where('status_pemesanan', 'menunggu_verifikasi')->count();
+        $pendingVerifMonth = (clone $monthlyBookingsQuery)->where('status_pemesanan', 'menunggu_konfirmasi')->count();
 
 
 
         // 3. REALTIME ALERTS (Global, not just this month)
         // For "Perlu Verifikasi" card, we usually want to know ALL pending items, not just this month's.
-        $pendingVerifAll = Pemesanan::where('status_pemesanan', 'menunggu_verifikasi')->count();
+        $pendingVerifAll = Pemesanan::where('status_pemesanan', 'menunggu_konfirmasi')->count();
 
         // 4. ACTIVE ROOMS (Realtime)
         $activeRooms = PenempatanKamar::where('status_penempatan', 'assigned')->count();
@@ -157,12 +157,7 @@ class LaporanController extends Controller
 
     public function exportPdf(Request $request)
     {
-        // // Increase memory and time limit for PDF generation
-        // ini_set('memory_limit', '512M');
-        // set_time_limit(300);
-
         try {
-            // 1. Ambil input filter (sama seperti method index)
             if ($request->has(['start_date', 'end_date'])) {
                 $startDate = Carbon::parse($request->start_date)->startOfDay();
                 $endDate = Carbon::parse($request->end_date)->endOfDay();
@@ -175,24 +170,22 @@ class LaporanController extends Controller
                 $periodeLabel = $startDate->translatedFormat('F Y');
             }
 
-            // 2. Query Dasar - Filter berdasarkan tanggal pemesanan dibuat (created_at)
-            // Konsisten dengan method index() dan Dashboard
+
             $query = Pemesanan::select('id', 'kode_booking', 'user_id', 'tanggal_check_in', 'tanggal_check_out', 'total_bayar', 'status_pemesanan', 'created_at')
-                ->whereIn('status_pemesanan', ['dikonfirmasi', 'selesai', 'tidak_datang'])
-                ->whereBetween('created_at', [$startDate, $endDate])
+                ->whereIn('status_pemesanan', ['dikonfirmasi', 'selesai'])
+                ->whereHas('pembayaran', function ($q) use ($startDate, $endDate) {
+                    $q->whereBetween('tanggal_konfirmasi', [$startDate, $endDate])
+                        ->whereNotNull('tanggal_konfirmasi');
+                })
                 ->with([
                     'user:id,name,email',
-                    'pembayaran:id,pemesanan_id,tanggal_bayar,jumlah_bayar'
+                    'pembayaran:id,pemesanan_id,tanggal_konfirmasi,jumlah_bayar'
                 ]);
 
-            // 3. Hitung Agregasi
             $totalPendapatan = $query->sum('total_bayar');
             $jumlahTransaksi = $query->count();
 
-            // 4. Ambil Detail Transaksi (order & get)
             $transaksi = $query->orderBy('tanggal_check_in', 'asc')->get();
-
-            // 5. Generate PDF
             $pdf = Pdf::loadView('laporan.pdf', [
                 'periode' => $periodeLabel,
                 'totalPendapatan' => $totalPendapatan,
@@ -200,10 +193,7 @@ class LaporanController extends Controller
                 'transaksi' => $transaksi
             ]);
 
-            // 6. Set paper size dan orientation
             $pdf->setPaper('a4', 'landscape');
-
-            // Optimize PDF rendering
             $pdf->setOption([
                 'dpi' => 96, // Lower DPI for faster generation
                 'enable_html5_parser' => true,

@@ -26,7 +26,7 @@ class KamarUnitsController extends Controller
         return $this->successResponse($units, 'List unit kamar retrieved successfully');
     }
 
-    public function indexdirty()
+    public function indexDirty()
     {
         $units = KamarUnit::with('kamar')
             ->where('status_unit', 'kotor')
@@ -51,13 +51,50 @@ class KamarUnitsController extends Controller
     {
         $request->validate([
             'kamar_id' => 'required|exists:kamars,id_kamar',
-            'nomor_unit' => 'required|string|max:50',
+            // nomor_unit sekarang opsional
+            'nomor_unit' => 'nullable|string|max:50',
             'status_unit' => 'required|in:available,unavailable,kotor,maintenance',
         ]);
 
+        $nomorUnit = $request->nomor_unit;
+
+        // Auto-generate nomor_unit jika tidak input
+        if (empty($nomorUnit)) {
+            // Kita cari unit terakhir di tipe kamar terkait untuk dasar nomor urut
+            $nextNumber = 1;
+            $prefixAngka = $request->kamar_id * 100;
+
+            // Coba ambil dari data unit kamar yang ada (termasuk yg soft deleted jika perlu)
+            $lastUnit = KamarUnit::where('kamar_id', $request->kamar_id)
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if ($lastUnit) {
+                // Mencoba mengekstrak angka dari nomor unit terakhir.
+                // Jika nomor_unit berbentuk "101", "A-01", atau "02"
+                // menggunakan regex untuk mengekstrak angka di akhir string
+                if (preg_match('/(\d+)$/', $lastUnit->nomor_unit, $matches)) {
+                    $angkaDiUjung = intval($matches[1]);
+                    // Cek jika angkanya lebih besar dari prefix, kurangi prefix karena polanya prefix + iterasi
+                    if ($angkaDiUjung > $prefixAngka && $angkaDiUjung < $prefixAngka + 100) {
+                        $nextNumber = ($angkaDiUjung - $prefixAngka) + 1;
+                    } else {
+                        // Fallback jika format sebelumnya aneh dan tidak ada angka
+                        $nextNumber = KamarUnit::where('kamar_id', $request->kamar_id)->count() + 1;
+                    }
+                } else {
+                    // Fallback jika format sebelumnya aneh dan tidak ada angka
+                    $nextNumber = KamarUnit::where('kamar_id', $request->kamar_id)->count() + 1;
+                }
+            }
+
+            // Format nomor unit menyesuaikan format di KamarController (kamar_id * 100 + i)
+            $nomorUnit = (string) ($prefixAngka + $nextNumber);
+        }
+
         $unit = KamarUnit::create([
             'kamar_id' => $request->kamar_id,
-            'nomor_unit' => $request->nomor_unit,
+            'nomor_unit' => $nomorUnit,
             'status_unit' => $request->status_unit,
         ]);
 

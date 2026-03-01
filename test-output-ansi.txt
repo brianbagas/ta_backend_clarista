@@ -1,0 +1,394 @@
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthTest::customer_can_register_successfully(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthTest::register_validation_fails_with_invalid_data(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthTest::user_can_login_with_valid_credentials(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthTest::login_fails_with_invalid_credentials(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthTest::customer_cannot_access_owner_endpoint(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Class RegistrationTest cannot be found in D:\Xampp\htdocs\db-clarista\tests\Feature\Auth\RegistrationTest.php
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::user_can_register_as_customer(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::registration_requires_valid_email(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::registration_requires_unique_email(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::user_can_login_with_valid_credentials(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::user_cannot_login_with_invalid_credentials(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::authenticated_user_can_get_their_info(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::unauthenticated_user_cannot_access_protected_routes(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::user_can_logout(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::customer_cannot_access_owner_routes(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\AuthenticationTest::owner_can_access_owner_routes(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::customer_can_check_room_availability(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::customer_can_create_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::booking_calculates_total_correctly(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::booking_with_promo_applies_discount(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::cannot_book_if_rooms_not_available(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::customer_can_cancel_their_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::customer_cannot_cancel_confirmed_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::customer_can_only_view_their_own_bookings(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::owner_can_view_all_bookings(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTest::owner_can_cancel_booking_with_reason(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTransactionTest::customer_can_create_booking_successfully_happy_path(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTransactionTest::booking_fails_when_stock_insufficient_unhappy_path(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\BookingTransactionTest::booking_validation_dates_logic(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CheckInOutTest::owner_can_check_in_guest(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CheckInOutTest::owner_can_check_out_guest(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CheckInOutTest::booking_status_changes_to_selesai_when_all_units_checked_out(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CheckInOutTest::cannot_check_in_twice(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CheckInOutTest::cannot_check_out_before_check_in(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CheckInOutTest::customer_cannot_check_in_guests(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CheckInOutTest::unit_status_can_be_changed_to_available_after_maintenance(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\Console\DeactivateExpiredPromosTest::it_deactivates_expired_promos(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\DebugAvailabilityTest::debug_availability_logic(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ExpiredBookingTest::expired_booking_is_auto_cancelled(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ExpiredBookingTest::expired_booking_with_promo_releases_quota(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ExpiredBookingTest::non_expired_booking_is_not_cancelled(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ExpiredBookingTest::confirmed_booking_is_not_cancelled_even_if_expired(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ExpiredBookingTest::multiple_expired_bookings_are_all_cancelled(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ExpiredBookingTest::cancelled_booking_releases_room_units(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\KamarAvailabilityTest::check_availability_returns_correct_remaining_stock(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\KamarAvailabilityTest::availability_check_ignores_cancelled_bookings(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PaymentTest::customer_can_upload_payment_proof(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PaymentTest::payment_amount_must_match_total(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PaymentTest::payment_proof_must_be_image(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PaymentTest::cannot_upload_payment_for_confirmed_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PaymentTest::owner_can_view_pending_payments(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PaymentTest::owner_can_verify_payment(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PaymentTest::owner_can_reject_payment(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PaymentTest::customer_cannot_upload_payment_for_other_users_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_can_cancel_booking_by_customer(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_can_cancel_booking_by_owner(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_can_cancel_booking_by_system(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_cancels_all_penempatan_kamars(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_cancels_penempatan_with_correct_actor(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_releases_promo_quota_on_cancel(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_does_not_change_promo_when_no_promo_used(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_sends_email_when_flag_is_true(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_does_not_send_email_when_flag_is_false(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_does_not_send_email_when_user_is_missing(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_returns_refreshed_pemesanan(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::service_cancels_booking_with_multiple_detail_pemesanans(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_customer_cancel_success(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_customer_cannot_cancel_others_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_customer_cannot_cancel_confirmed_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_customer_cannot_cancel_completed_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_customer_cannot_cancel_already_cancelled_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_owner_cancel_with_valid_reason(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_owner_cancel_requires_reason(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_owner_cancel_reason_min_10_chars(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_owner_cannot_cancel_completed_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_owner_cannot_cancel_already_cancelled_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_owner_can_cancel_pending_payment_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_customer_cancel_releases_promo_quota(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_customer_cancel_updates_penempatan_status(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PemesananServiceTest::api_unauthenticated_user_cannot_cancel(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Class ProfileTest cannot be found in D:\Xampp\htdocs\db-clarista\tests\Feature\ProfileTest.php
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PromoTest::can_validate_active_promo(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PromoTest::cannot_use_expired_promo(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PromoTest::cannot_use_inactive_promo(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PromoTest::cannot_use_promo_with_insufficient_transaction(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PromoTest::cannot_use_promo_with_full_quota(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PromoTest::percentage_promo_calculates_correctly(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PromoTest::promo_with_unlimited_quota_always_available(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ReviewTest::customer_can_create_review_for_completed_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ReviewTest::cannot_review_non_completed_booking(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ReviewTest::cannot_review_same_booking_twice(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ReviewTest::rating_must_be_between_1_and_5(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ReviewTest::can_get_approved_reviews(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ReviewTest::owner_can_approve_review(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ReviewTest::owner_can_hide_review(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\ReviewTest::customer_cannot_moderate_reviews(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   PASS  Tests\Unit\ExampleTest
+  ✓ that tr… 0.01s  
+
+   PASS  Tests\Feature\AuthTest
+  ✓ custome… 0.46s  
+  ✓ registe… 0.03s  
+  ✓ user ca… 0.06s  
+  ✓ login f… 0.25s  
+  ✓ custome… 0.02s  
+
+   PASS  Tests\Feature\Auth\AuthenticationTest
+  ✓ login s… 0.05s  
+  ✓ users c… 0.02s  
+  ✓ users c… 0.23s  
+  ✓ users c… 0.02s  
+
+   PASS  Tests\Feature\Auth\EmailVerificationTest
+  ✓ email v… 0.02s  
+  ✓ email c… 0.02s  
+  ✓ email i… 0.02s  
+
+   PASS  Tests\Feature\Auth\PasswordConfirmationTest
+  ✓ confirm… 0.03s  
+  ✓ passwor… 0.03s  
+  ✓ passwor… 0.24s  
+
+   PASS  Tests\Feature\Auth\PasswordResetTest
+  ✓ reset p… 0.02s  
+  ✓ reset p… 0.22s  
+  ✓ reset p… 0.24s  
+  ✓ passwor… 0.23s  
+
+   PASS  Tests\Feature\Auth\PasswordUpdateTest
+  ✓ passwor… 0.02s  
+  ✓ correct… 0.02s  
+
+   PASS  Tests\Feature\AuthenticationTest
+  ✓ user ca… 0.02s  
+  ✓ registr… 0.02s  
+  ✓ registr… 0.03s  
+  ✓ user ca… 0.03s  
+  ✓ user ca… 0.24s  
+  ✓ authent… 0.02s  
+  ✓ unauthe… 0.02s  
+  ✓ user ca… 0.02s  
+  ✓ custome… 0.02s  
+  ✓ owner c… 0.02s  
+
+   PASS  Tests\Feature\BookingTest
+  ✓ custome… 0.03s  
+  ✓ custome… 0.03s  
+  ✓ booking… 0.03s  
+  ✓ booking… 0.03s  
+  ✓ cannot…  0.03s  
+  ✓ custome… 0.04s  
+  ✓ custome… 0.03s  
+  ✓ custome… 0.04s  
+  ✓ owner c… 0.04s  
+  ✓ owner c… 0.05s  
+
+   PASS  Tests\Feature\BookingTransactionTest
+  ✓ custome… 0.03s  
+  ✓ booking… 0.02s  
+  ✓ booking… 0.02s  
+
+   PASS  Tests\Feature\CancellationTest
+  ✓ user ca… 0.02s  
+  ✓ user ca… 0.02s  
+  ✓ user ca… 0.02s  
+
+   PASS  Tests\Feature\CheckInOutTest
+  ✓ owner c… 0.04s  
+  ✓ owner c… 0.03s  
+  ✓ booking… 0.03s  
+  ✓ cannot…  0.03s  
+  ✓ cannot…  0.03s  
+  ✓ custome… 0.04s  
+  ✓ unit st… 0.04s  
+
+   PASS  Tests\Feature\Console\DeactivateExpiredPromosTest
+  ✓ it deac… 0.03s  
+array:3 [
+  0 => array:3 [
+    "query" => "select "kamars".*, (select count(*) from "kamar_units" where "kamars"."id_kamar" = "kamar_units"."kamar_id" and "status_unit" = ? and "kamar_units"."deleted_at" is null) as "total_fisik" from "kamars" where "status_ketersediaan" = ? and "kamars"."deleted_at" is null"
+    "bindings" => array:2 [
+      0 => "available"
+      1 => 1
+    ]
+    "time" => 0.07
+  ]
+  1 => array:3 [
+    "query" => "select * from "kamar_images" where "kamar_images"."kamar_id" in (1) and "kamar_images"."deleted_at" is null"
+    "bindings" => []
+    "time" => 0.03
+  ]
+  2 => array:3 [
+    "query" => "select "kamar_unit_id" from "penempatan_kamars" where exists (select * from "kamar_units" where "penempatan_kamars"."kamar_unit_id" = "kamar_units"."id" and "kamar_id" = ? and "kamar_units"."deleted_at" is null) and exists (select * from "detail_pemesanans" where "penempatan_kamars"."detail_pemesanan_id" = "detail_pemesanans"."id" and exists (select * from "pemesanans" where "detail_pemesanans"."pemesanan_id" = "pemesanans"."id" and "status_pemesanan" != ? and ("tanggal_check_in" < ? and "tanggal_check_out" > ?) and "pemesanans"."deleted_at" is null) and "detail_pemesanans"."deleted_at" is null) and "status_penempatan" not in (?, ?) and "penempatan_kamars"."deleted_at" is null"
+    "bindings" => array:6 [
+      0 => 1
+      1 => "batal"
+      2 => "2026-02-23"
+      3 => "2026-02-21"
+      4 => "cancelled"
+      5 => "checked_out"
+    ]
+    "time" => 0.07
+  ]
+] // tests\Feature\DebugAvailabilityTest.php:56
+
+DEBUG OUTPUT:
+Total Fisik: 5
+Sisa Kamar: 5
+Status DB: batal
+
+   PASS  Tests\Feature\DebugAvailabilityTest
+  ✓ debug a… 0.03s  
+
+   PASS  Tests\Feature\ExampleTest
+  ✓ the app… 0.03s  
+
+   PASS  Tests\Feature\ExpiredBookingTest
+  ✓ expired… 0.03s  
+  ✓ expired… 0.03s  
+  ✓ non exp… 0.03s  
+  ✓ confirm… 0.03s  
+  ✓ multipl… 0.04s  
+  ✓ cancell… 0.03s  
+
+   PASS  Tests\Feature\KamarAvailabilityTest
+  ✓ check a… 0.04s  
+  ✓ availab… 0.03s  
+
+   PASS  Tests\Feature\PaymentTest
+  ✓ custome… 0.07s  
+  ✓ payment… 0.03s  
+  ✓ payment… 0.04s  
+  ✓ cannot…  0.03s  
+  ✓ owner c… 0.04s  
+  ✓ owner c… 0.04s  
+  ✓ owner c… 0.05s  
+  ✓ custome… 0.04s  
+
+   PASS  Tests\Feature\PemesananServiceTest
+  ✓ service… 0.03s  
+  ✓ service… 0.03s  
+  ✓ service… 0.03s  
+  ✓ service… 0.03s  
+  ✓ service… 0.03s  
+  ✓ service… 0.03s  
+  ✓ service… 0.03s  
+  ✓ service… 0.03s  
+  ✓ service… 0.03s  
+  ✓ service… 0.04s  
+  ✓ service… 0.04s  
+  ✓ service… 0.04s  
+  ✓ api cus… 0.04s  
+  ✓ api cus… 0.03s  
+  ✓ api cus… 0.03s  
+  ✓ api cus… 0.03s  
+  ✓ api cus… 0.04s  
+  ✓ api own… 0.04s  
+  ✓ api own… 0.04s  
+  ✓ api own… 0.03s  
+  ✓ api own… 0.03s  
+  ✓ api own… 0.03s  
+  ✓ api own… 0.04s  
+  ✓ api cus… 0.04s  
+  ✓ api cus… 0.03s  
+  ✓ api una… 0.02s  
+
+   PASS  Tests\Feature\PromoTest
+  ✓ can val… 0.03s  
+  ✓ cannot…  0.02s  
+  ✓ cannot…  0.02s  
+  ✓ cannot…  0.02s  
+  ✓ cannot…  0.02s  
+  ✓ percent… 0.02s  
+  ✓ promo w… 0.02s  
+
+   PASS  Tests\Feature\ReviewTest
+  ✓ custome… 0.03s  
+  ✓ cannot…  0.02s  
+  ✓ cannot…  0.02s  
+  ✓ rating…  0.02s  
+  ✓ can get… 0.02s  
+  ✓ owner c… 0.03s  
+  ✓ owner c… 0.02s  
+  ✓ custome… 0.02s  
+
+   PASS  Tests\Feature\SoftDeleteTest
+  ✓ bank ac… 0.03s  
+  ✓ promo s… 0.03s  
+  ✓ kamar s… 0.03s  
+  ✓ pemesan… 0.02s  
+  ✓ kamar u… 0.03s  
+  ✓ review…  0.02s  
+  ✓ pembaya… 0.03s  
+
+  Tests:    122 passed (314 assertions)
+  Duration: 5.81s
+

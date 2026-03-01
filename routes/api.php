@@ -30,8 +30,12 @@ Route::options('{any}', function () {
 // ===============================================================================================
 
 // Auth
-Route::post('/register', [ApiAuthController::class, 'register']);
-Route::post('/login', [ApiAuthController::class, 'login']);
+Route::middleware('throttle:5,1')->group(function () {
+
+    Route::post('/register', [ApiAuthController::class, 'register']);
+    Route::post('/login', [ApiAuthController::class, 'login']);
+
+});
 
 // Kamar (Read Only untuk Customer/Publik)
 Route::get('/kamar', [KamarController::class, 'index']);
@@ -86,7 +90,7 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     // --- Manajemen Promo (Explicit) ---
     Route::get('/admin/promo', [PromoController::class, 'indexForOwner']);
     Route::post('/admin/promo', [PromoController::class, 'store']);
-    Route::get('/admin/promo/{promo}', [PromoController::class, 'showForOwner']);
+
     Route::put('/admin/promo/{promo}', [PromoController::class, 'update']);
     Route::delete('/admin/promo/{promo}', [PromoController::class, 'destroy']);
 
@@ -135,7 +139,7 @@ Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
     Route::put('/admin/kamar-units/{id}', [PenempatanKamarController::class, 'setAvailable']);
 
     // --- Manajemen Kamar Units (Dirty/Maintenance) ---
-    Route::get('/admin/kamar-dirty', [KamarUnitsController::class, 'indexdirty']);
+    Route::get('/admin/kamar-dirty', [KamarUnitsController::class, 'indexDirty']);
 
     // --- Manajemen Bank Account (Owner) ---
     Route::get('/admin/bank-accounts', [App\Http\Controllers\BankAccountController::class, 'indexForOwner']);

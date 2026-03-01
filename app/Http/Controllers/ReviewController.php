@@ -59,9 +59,7 @@ class ReviewController extends Controller
         });
         return $this->successResponse($formattedReviews, 'Daftar review berhasil ditampilkan.');
     }
-    // app/Http/Controllers/ReviewController.php
 
-    // ... (method index, store, dll.)
 
     /**
      * Mengambil 9 review terbaru yang disetujui untuk homepage.
@@ -106,24 +104,24 @@ class ReviewController extends Controller
 
         $pemesanan = Pemesanan::find($validated['pemesanan_id']);
 
-        // --- Pengecekan Keamanan & Aturan Bisnis ---
 
-        // 1. Otorisasi
+
+
         if (Auth::id() !== $pemesanan->user_id) {
             return $this->errorResponse('Anda tidak bisa mereview pesanan ini.', 403);
         }
 
-        // 2. Aturan Bisnis
+
         if ($pemesanan->status_pemesanan !== 'selesai') {
             return $this->errorResponse('Anda hanya bisa mereview pesanan yang sudah selesai.', 422);
         }
 
-        // 3. Aturan Bisnis
+
         if ($pemesanan->review()->exists()) {
             return $this->errorResponse('Pesanan ini sudah pernah Anda review.', 422);
         }
 
-        // --- Simpan Review ---
+
         $review = Review::create([
             'pemesanan_id' => $pemesanan->id,
             'rating' => $validated['rating'],
@@ -186,7 +184,7 @@ class ReviewController extends Controller
             ->latest('deleted_at')
             ->get();
 
-        // Map format agar sesuai dengan frontend
+
         $formattedReviews = $reviews->map(function ($review) {
             return [
                 'id' => $review->id,

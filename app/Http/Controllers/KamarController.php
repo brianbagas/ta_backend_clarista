@@ -28,20 +28,8 @@ class KamarController extends Controller
         // Mengembalikan data sebagai respons JSON
         return $this->successResponse($kamars, 'Daftar semua kamar berhasil ditampilkan.');
     }
-    // Di method index
-    public function indexwithImages()
-    {
-        // Kita gunakan 'with' untuk mengikutsertakan data gambar
-        $kamars = Kamar::with('images')->get();
-        return $this->successResponse($kamars, 'Data berhasil diambil');
-    }
 
-    // Di method show
-    public function showwithImages(Kamar $kamar)
-    {
-        $kamar->load('images');
-        return $this->successResponse($kamar, 'Detail kamar ditemukan');
-    }
+
 
     /**
      * Menyimpan data kamar baru.
@@ -114,33 +102,8 @@ class KamarController extends Controller
         }
     }
 
-    public function store(Request $request)
-    {
-        // Validasi input dari request
-        $validator = Validator::make($request->all(), [
-            'tipe_kamar' => 'required|string|max:50',
-            'harga' => 'required|numeric',
-            'deskripsi' => 'nullable|string',
-            'status_ketersediaan' => 'nullable|boolean',
-            'gambar_kamar' => 'nullable|image|mimes:jpg,png,jpeg|max:2048'
-        ]);
-
-        // Jika validasi gagal, kembalikan pesan error
-        if ($validator->fails()) {
-            return $this->errorResponse('Validasi gagal', 422, $validator->errors());
-        }
-
-        if ($request->hasFile('gambar_kamar')) {
-            $path = $request->file('gambar_kamar')->store('public/kamars');
-            $validatedData['image_path'] = $path;
-        }
-
-        // Membuat data kamar baru
-        $kamar = Kamar::create($request->all());
-
-        // Mengembalikan respons sukses beserta data yang baru dibuat
-        return $this->successResponse($kamar, 'Data kamar berhasil ditambahkan.', 201);
-    }
+    // Method store() dihapus karena duplikat dengan addKamar() yang lebih lengkap dan aman.
+    // addKamar() sudah menangani: validasi, upload gambar multiple, dan auto-generate unit.
 
     /**
      * Menampilkan satu data kamar spesifik.
@@ -263,7 +226,7 @@ class KamarController extends Controller
             ->where('status_ketersediaan', 1)
             ->withCount([
                 'kamarUnits as total_fisik' => function (Builder $query) {
-                    $query->where('status_unit', 'available');
+                    $query->whereIn('status_unit', ['available', 'kotor']);
                 }
             ])
             ->get()

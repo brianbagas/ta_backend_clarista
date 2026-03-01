@@ -15,8 +15,8 @@ class Pembayaran extends Model
         'jumlah_bayar',
         'bank_tujuan',
         'nama_pengirim',
-        'tanggal_bayar',
-        'status_verifikasi'
+        'tanggal_konfirmasi',
+        'status_konfirmasi'
     ];
     public function pemesanan()
     {

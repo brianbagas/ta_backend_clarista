@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 class DetailPemesanan extends Model
 {
     use SoftDeletes;
-     use HasFactory;
-     use HasUlids;
+    use HasFactory;
+    use HasUlids;
 
     /**
      * Atribut yang bisa diisi secara massal.
@@ -37,9 +37,8 @@ class DetailPemesanan extends Model
     {
         return $this->belongsTo(Kamar::class, 'kamar_id');
     }
-public function penempatanKamars()
+    public function penempatanKamars()
     {
-        // Pastikan nama model 'PenempatanKamar' benar
         return $this->hasMany(PenempatanKamar::class, 'detail_pemesanan_id', 'id');
     }
 }

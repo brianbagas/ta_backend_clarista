@@ -70,7 +70,7 @@ class PaymentTest extends TestCase
                     'jumlah_bayar' => 1400000,
                     'bank_tujuan' => 'BCA',
                     'nama_pengirim' => 'Customer User',
-                    'tanggal_bayar' => Carbon::today()->format('Y-m-d')
+                    'tanggal_konfirmasi' => Carbon::today()->format('Y-m-d')
                 ]);
 
         $response->assertStatus(200)
@@ -89,7 +89,7 @@ class PaymentTest extends TestCase
             'status_pemesanan' => 'menunggu_konfirmasi'
         ]);
 
-        Storage::disk('public')->assertExists('bukti_pembayaran/' . basename($file->hashName()));
+        Storage::assertExists('bukti_pembayaran/' . basename($file->hashName()));
     }
 
     /** @test */
@@ -106,7 +106,7 @@ class PaymentTest extends TestCase
                     'jumlah_bayar' => 1000000, // Wrong amount
                     'bank_tujuan' => 'BCA',
                     'nama_pengirim' => 'Customer User',
-                    'tanggal_bayar' => Carbon::today()->format('Y-m-d')
+                    'tanggal_konfirmasi' => Carbon::today()->format('Y-m-d')
                 ]);
 
         $response->assertStatus(422)
@@ -129,7 +129,7 @@ class PaymentTest extends TestCase
                     'jumlah_bayar' => 1400000,
                     'bank_tujuan' => 'BCA',
                     'nama_pengirim' => 'Customer User',
-                    'tanggal_bayar' => Carbon::today()->format('Y-m-d')
+                    'tanggal_konfirmasi' => Carbon::today()->format('Y-m-d')
                 ]);
 
         $response->assertStatus(422)
@@ -152,7 +152,7 @@ class PaymentTest extends TestCase
                     'jumlah_bayar' => 1400000,
                     'bank_tujuan' => 'BCA',
                     'nama_pengirim' => 'Customer User',
-                    'tanggal_bayar' => Carbon::today()->format('Y-m-d')
+                    'tanggal_konfirmasi' => Carbon::today()->format('Y-m-d')
                 ]);
 
         $response->assertStatus(400);
@@ -168,7 +168,7 @@ class PaymentTest extends TestCase
             'jumlah_bayar' => 1400000,
             'bank_tujuan' => 'BCA',
             'nama_pengirim' => 'Customer User',
-            'tanggal_bayar' => Carbon::today()
+            'tanggal_konfirmasi' => Carbon::today()
         ]);
 
         $this->pemesanan->update(['status_pemesanan' => 'menunggu_konfirmasi']);
@@ -202,7 +202,7 @@ class PaymentTest extends TestCase
             'jumlah_bayar' => 1400000,
             'bank_tujuan' => 'BCA',
             'nama_pengirim' => 'Customer User',
-            'tanggal_bayar' => Carbon::today()
+            'tanggal_konfirmasi' => Carbon::today()
         ]);
 
         $this->pemesanan->update(['status_pemesanan' => 'menunggu_konfirmasi']);
@@ -235,7 +235,7 @@ class PaymentTest extends TestCase
             'jumlah_bayar' => 1400000,
             'bank_tujuan' => 'BCA',
             'nama_pengirim' => 'Customer User',
-            'tanggal_bayar' => Carbon::today()
+            'tanggal_konfirmasi' => Carbon::today()
         ]);
 
         $this->pemesanan->update(['status_pemesanan' => 'menunggu_konfirmasi']);
@@ -276,7 +276,7 @@ class PaymentTest extends TestCase
                     'jumlah_bayar' => 1400000,
                     'bank_tujuan' => 'BCA',
                     'nama_pengirim' => 'Other Customer',
-                    'tanggal_bayar' => Carbon::today()->format('Y-m-d')
+                    'tanggal_konfirmasi' => Carbon::today()->format('Y-m-d')
                 ]);
 
         $response->assertStatus(403);

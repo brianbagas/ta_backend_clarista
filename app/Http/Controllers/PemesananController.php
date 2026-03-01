@@ -20,20 +20,21 @@ use Carbon\Carbon;
 use App\Traits\ApiResponseTrait;
 use App\Mail\PesananDibatalkan;
 
+
 class PemesananController extends Controller
 {
     use ApiResponseTrait;
+
+
 
     /**
      * Display a listing of the resource.
      */
     public function index()
-    { /** @var \App\Models\User $user */
+    {
         $user = Auth::user();
-
-        // Ambil pemesanan milik user, urutkan dari yang terbaru dengan relasinya
         $pemesanans = $user->pemesanans()
-            ->with(['detailPemesanans.kamar.images'])
+            ->with(['detailPemesanans.kamar.images', 'review'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -86,7 +87,7 @@ class PemesananController extends Controller
                     ]);
                 }
 
-                // Hitung Subtotal
+
                 $subtotal += $kamar->harga * $item['jumlah_kamar'] * $durasiMenginap;
 
                 $bookingPlan[] = [
@@ -116,7 +117,7 @@ class PemesananController extends Controller
                     $promoId = $promo->id;
                 }
                 if ($promoId) {
-                    // Lock row promo secara eksklusif
+                    // Lock promo row
                     $promoLocked = Promo::where('id', $promoId)->lockForUpdate()->first();
 
                     if (!$promoLocked) {
@@ -124,13 +125,13 @@ class PemesananController extends Controller
                         return $this->errorResponse('Promo tidak ditemukan atau tidak aktif.', 404);
                     }
 
-                    // Cek kuota lagi setelah dilock
+                    // Re-check kuota
                     if (!is_null($promoLocked->kuota) && $promoLocked->kuota_terpakai >= $promoLocked->kuota) {
                         DB::rollBack();
                         return $this->errorResponse('Maaf, kuota promo baru saja habis digunakan pengguna lain.', 409);
                     }
 
-                    // Aman untuk increment
+
                     $promoLocked->increment('kuota_terpakai');
                 }
             }
@@ -146,9 +147,9 @@ class PemesananController extends Controller
                 'expired_at' => now()->addHours(1)
             ]);
 
-            // B. Detail & Penempatan
+
             foreach ($bookingPlan as $plan) {
-                // 1. Simpan Detail Pemesanan (Transaksi Barang)
+
                 $detail = DetailPemesanan::create([
                     'pemesanan_id' => $pemesanan->id,
                     'kamar_id' => $plan['kamar_obj']->id_kamar,
@@ -156,7 +157,7 @@ class PemesananController extends Controller
                     'harga_per_malam' => $plan['kamar_obj']->harga,
                 ]);
 
-                // 2. Simpan Penempatan Kamar
+
                 foreach ($plan['units'] as $unit) {
                     PenempatanKamar::create([
                         'detail_pemesanan_id' => $detail->id,
@@ -175,7 +176,7 @@ class PemesananController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            // Return error biar gampang debugging
+
             if ($e instanceof ValidationException) {
                 return $this->errorResponse('Validasi gagal', 422, $e->errors());
             }
@@ -191,19 +192,55 @@ class PemesananController extends Controller
         if (Auth::id() !== $pemesanan->user_id) {
             return $this->errorResponse('Akses ditolak.', 403);
         }
-        // Tambahkan 'promo' ke dalam load()
+
         return $this->successResponse(
             $pemesanan->load('user', 'detailPemesanans.kamar', 'promo'),
             'Detail pemesanan berhasil diambil'
         );
     }
 
-    public function indexOwner()
+    public function indexOwner(Request $request)
     {
-        // Ambil semua pemesanan owner
-        $pemesanans = Pemesanan::with(['user', 'detailPemesanans.penempatanKamars', 'pembayaran'])
-            ->latest()
-            ->get();
+        $query = Pemesanan::with(['user', 'detailPemesanans.penempatanKamars', 'pembayaran']);
+
+        // Default sorting
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        // Proteksi kolom sorting yang valid agar tidak SQL injection
+        $allowedSortColumns = ['kode_booking', 'tanggal_check_in', 'tanggal_check_out', 'total_bayar', 'status_pemesanan', 'created_at'];
+
+        if (in_array($sortBy, $allowedSortColumns)) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->latest();
+        }
+
+        // Filter by status tab
+        if ($request->filled('status')) {
+            $status = $request->status;
+            if ($status === 'perlu_tindakan') {
+                $query->where('status_pemesanan', 'menunggu_konfirmasi');
+            } elseif ($status === 'selesai_batal') {
+                $query->whereIn('status_pemesanan', ['selesai', 'batal', 'tidak_datang']);
+            } else {
+                $query->where('status_pemesanan', $status);
+            }
+        }
+
+        // Search by nama tamu atau kode booking
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('kode_booking', 'LIKE', "%{$search}%")
+                    ->orWhereHas('user', function ($q2) use ($search) {
+                        $q2->where('name', 'LIKE', "%{$search}%");
+                    });
+            });
+        }
+
+        $perPage = $request->get('per_page', 10);
+        $pemesanans = $query->paginate($perPage);
 
         return $this->successResponse($pemesanans, 'Data pemesanan owner berhasil diambil');
     }
@@ -245,12 +282,12 @@ class PemesananController extends Controller
      */
     public function cancel(Pemesanan $pemesanan)
     {
-        // 1. Cek Kepemilikan (Authorization)
+
         if (Auth::id() !== $pemesanan->user_id) {
             return $this->errorResponse('Akses ditolak. Anda bukan pemilik pesanan ini.', 403);
         }
 
-        // 2. Cek Status Pemesanan
+
         if ($pemesanan->status_pemesanan !== 'menunggu_pembayaran') {
             return $this->errorResponse(
                 'Pemesanan tidak dapat dibatalkan karena status saat ini adalah: ' . $pemesanan->status_pemesanan,
@@ -258,11 +295,11 @@ class PemesananController extends Controller
             );
         }
 
-        // 3. Proses Pembatalan
+
         try {
             DB::beginTransaction();
 
-            // Ubah status menjadi 'batal' dengan tracking
+
             $pemesanan->update([
                 'status_pemesanan' => 'batal',
                 'alasan_batal' => 'Dibatalkan oleh customer',
@@ -270,7 +307,7 @@ class PemesananController extends Controller
                 'dibatalkan_at' => now(),
             ]);
 
-            // Release kuota promo jika digunakan
+            // Release kuota promo
             if ($pemesanan->promo_id) {
                 $promo = Promo::find($pemesanan->promo_id);
                 if ($promo) {
@@ -278,10 +315,9 @@ class PemesananController extends Controller
                 }
             }
 
-            // PenempatanKamar tidak perlu dihapus manual, logic availableCheck sudah mengecualikan status 'batal'.
-            // Update status untuk data rapi
+            // Update penempatan kamar
             foreach ($pemesanan->detailPemesanans as $detail) {
-                // Mass update semua penempatan di detail ini
+
                 $detail->penempatanKamars()->update([
                     'status_penempatan' => 'cancelled',
                     'dibatalkan_oleh' => 'customer',
@@ -305,7 +341,7 @@ class PemesananController extends Controller
      */
     public function cancelByOwner(Request $request, Pemesanan $pemesanan)
     {
-        // 1. Validasi Input
+
         try {
             $validated = $request->validate([
                 'alasan' => 'required|string|min:10',
@@ -314,7 +350,7 @@ class PemesananController extends Controller
             return $this->errorResponse('Validasi gagal', 422, $e->errors());
         }
 
-        // 2. Cek Status Pemesanan
+
         if ($pemesanan->status_pemesanan === 'selesai') {
             return $this->errorResponse('Pemesanan yang sudah selesai tidak bisa dibatalkan.', 400);
         }
@@ -323,11 +359,11 @@ class PemesananController extends Controller
             return $this->errorResponse('Pemesanan ini sudah dibatalkan sebelumnya.', 400);
         }
 
-        // 3. Proses Pembatalan
+
         try {
             DB::beginTransaction();
 
-            // Ubah status menjadi 'batal' dengan tracking lengkap
+
             $pemesanan->update([
                 'status_pemesanan' => 'batal',
                 'alasan_batal' => $validated['alasan'],
@@ -336,7 +372,7 @@ class PemesananController extends Controller
                 'catatan' => 'Dibatalkan oleh owner: ' . $validated['alasan'],
             ]);
 
-            // Sync status PenempatanKamar -> Cancelled
+            // Update penempatan kamar
             foreach ($pemesanan->detailPemesanans as $detail) {
                 $detail->penempatanKamars()->update([
                     'status_penempatan' => 'cancelled',
@@ -346,7 +382,7 @@ class PemesananController extends Controller
                 ]);
             }
 
-            // Release kuota promo jika digunakan
+            // Release kuota promo
             if ($pemesanan->promo_id) {
                 $promo = Promo::find($pemesanan->promo_id);
                 if ($promo) {
@@ -375,7 +411,7 @@ class PemesananController extends Controller
     public function storeOffline(Request $request)
     {
         try {
-            // 1. Validasi Input - Mendukung multi-room dengan array kamars
+
             $request->validate([
                 'nama_pemesan' => 'required|string',
                 'no_hp' => 'required|string',
@@ -389,30 +425,30 @@ class PemesananController extends Controller
             return $this->errorResponse('Validasi gagal', 422, $e->errors());
         }
 
-        // Hitung tanggal check out
+
         $checkInDate = Carbon::parse($request->check_in_date);
         $checkOutDate = $checkInDate->copy()->addDays($request->durasi);
         $durasiMenginap = $request->durasi;
 
         try {
-            // Mulai Transaksi Database
+
             $result = DB::transaction(function () use ($request, $checkInDate, $checkOutDate, $durasiMenginap) {
 
-                // A. Pre-validate availability dan hitung total
+
                 $totalHarga = 0;
                 $bookingPlan = [];
 
                 foreach ($request->kamars as $item) {
                     $kamar = Kamar::findOrFail($item['kamar_id']);
 
-                    // Cek ketersediaan unit menggunakan method di Model Kamar
+
                     $availableUnits = $kamar->getAvailableUnits($checkInDate, $checkOutDate, $item['jumlah_kamar'], true);
 
                     if ($availableUnits->count() < $item['jumlah_kamar']) {
                         throw new \Exception("Stok kamar \"{$kamar->nama_kamar}\" tidak mencukupi. Hanya tersedia " . $availableUnits->count() . " unit.");
                     }
 
-                    // Hitung total harga
+
                     $totalHarga += $kamar->harga * $item['jumlah_kamar'] * $durasiMenginap;
 
                     $bookingPlan[] = [
@@ -422,7 +458,7 @@ class PemesananController extends Controller
                     ];
                 }
 
-                // B. Cari User berdasarkan No HP, atau Buat Baru jika belum ada
+                // Cari/buat user offline
                 $user = User::firstOrCreate(
                     ['email' => $request->no_hp . '@offline.guest'],
                     [
@@ -434,7 +470,7 @@ class PemesananController extends Controller
                     ]
                 );
 
-                // C. Buat Pesanan (Status langsung Confirmed/Paid)
+
                 $pemesanan = Pemesanan::create([
                     'user_id' => $user->id,
                     'tanggal_check_in' => $checkInDate,
@@ -444,18 +480,18 @@ class PemesananController extends Controller
                     'catatan' => 'Pemesanan Offline (Walk-in) via Admin',
                 ]);
 
-                // D. Buat Record Pembayaran (Langsung Lunas)
+
                 Pembayaran::create([
                     'pemesanan_id' => $pemesanan->id,
                     'jumlah_bayar' => $totalHarga,
                     'bank_tujuan' => 'CASH',
                     'nama_pengirim' => $request->nama_pemesan,
-                    'status' => 'verified',
-                    'tanggal_bayar' => now(),
+                    'status_konfirmasi' => 'verified',
+                    'tanggal_konfirmasi' => now(),
                     'bukti_bayar_path' => 'offline_transaction.jpg'
                 ]);
 
-                // E. Buat Detail Pemesanan & Penempatan untuk setiap tipe kamar
+
                 $isCheckInToday = $checkInDate->isToday();
 
                 foreach ($bookingPlan as $plan) {
@@ -492,7 +528,7 @@ class PemesananController extends Controller
      */
     public function markAsNoShow(Pemesanan $pemesanan)
     {
-        // 1. Validasi: Status pemesanan harus 'dikonfirmasi'
+
         if ($pemesanan->status_pemesanan !== 'dikonfirmasi') {
             return $this->errorResponse(
                 'Hanya pesanan yang sudah dikonfirmasi yang bisa ditandai tidak datang. Status saat ini: ' . $pemesanan->status_pemesanan,
@@ -500,7 +536,7 @@ class PemesananController extends Controller
             );
         }
 
-        // 2. Validasi: Cek apakah sudah check-in
+        // Cek apakah sudah check-in
         $hasCheckedIn = $pemesanan->detailPemesanans()
             ->whereHas('penempatanKamars', function ($q) {
                 $q->whereNotNull('check_in_aktual');
@@ -514,7 +550,7 @@ class PemesananController extends Controller
             );
         }
 
-        // 3. Proses Penandaan Tidak Datang
+
         try {
             DB::beginTransaction();
 
@@ -525,7 +561,7 @@ class PemesananController extends Controller
                 'dibatalkan_at' => now(),
             ]);
 
-            // Update status penempatan kamar menjadi 'cancelled'
+            // Update penempatan kamar
             foreach ($pemesanan->detailPemesanans as $detail) {
                 $detail->penempatanKamars()->update([
                     'status_penempatan' => 'cancelled',
@@ -557,11 +593,11 @@ class PemesananController extends Controller
             ->with([
                 'user',
                 'detailPemesanans' => function ($query) {
-                    // Include soft-deleted details and their soft-deleted kamars
+
                     $query->withTrashed()->with([
                         'kamar' => function ($q) {
-                        $q->withTrashed();
-                    }
+                            $q->withTrashed();
+                        }
                     ]);
                 }
             ])
@@ -578,22 +614,21 @@ class PemesananController extends Controller
     {
         $pemesanan = Pemesanan::onlyTrashed()->findOrFail($id);
 
-        // Restore Pemesanan
+
         $pemesanan->restore();
 
-        // Restore related soft-deleted children
-        // 1. Detail Pemesanan & Penempatan Kamar
+        // Restore relasi
         foreach ($pemesanan->detailPemesanans()->onlyTrashed()->get() as $detail) {
             $detail->restore();
             $detail->penempatanKamars()->onlyTrashed()->restore();
         }
 
-        // 2. Pembayaran
+
         if ($pemesanan->pembayaran()->onlyTrashed()->exists()) {
             $pemesanan->pembayaran()->onlyTrashed()->restore();
         }
 
-        // 3. Review
+
         if ($pemesanan->review()->onlyTrashed()->exists()) {
             $pemesanan->review()->onlyTrashed()->restore();
         }
@@ -611,29 +646,28 @@ class PemesananController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Force delete children first
 
-            // Detail & Penempatan
+
+
             foreach ($pemesanan->detailPemesanans()->withTrashed()->get() as $detail) {
-                // Hapus penempatan kamar permanen
+
                 $detail->penempatanKamars()->withTrashed()->forceDelete();
-                // Hapus detail permanen
+
                 $detail->forceDelete();
             }
 
-            // Pembayaran
+
             if ($pemesanan->pembayaran()->withTrashed()->exists()) {
-                // Hapus file bukti bayar jika ada (optional, good practice)
-                // Storage::disk('public')->delete($pemesanan->pembayaran->bukti_bayar_path);
+
                 $pemesanan->pembayaran()->withTrashed()->forceDelete();
             }
 
-            // Review
+
             if ($pemesanan->review()->withTrashed()->exists()) {
                 $pemesanan->review()->withTrashed()->forceDelete();
             }
 
-            // 2. Force delete Parent
+
             $pemesanan->forceDelete();
 
             DB::commit();

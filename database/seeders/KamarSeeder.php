@@ -21,7 +21,7 @@ class KamarSeeder extends Seeder
                 'harga' => 350000.00,
                 'status_ketersediaan' => true,
                 'jumlah_total' => 2,
-                'units' => ['DLX-101', 'DLX-102']
+                'units' => ['101', '102']
             ],
             [
                 'tipe_kamar' => 'Standard Room',
@@ -29,7 +29,7 @@ class KamarSeeder extends Seeder
                 'harga' => 250000.00,
                 'status_ketersediaan' => true,
                 'jumlah_total' => 2,
-                'units' => ['STD-201', 'STD-202']
+                'units' => ['201', '202']
             ],
         ];
 

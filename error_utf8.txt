@@ -1,0 +1,22 @@
+﻿
+   Illuminate\Database\QueryException 
+
+  SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it (Connection: mysql, SQL: select exists (select 1 from information_schema.tables where table_schema = schema() and table_name = 'migrations' and table_type in ('BASE TABLE', 'SYSTEM VERSIONED')) as `exists`)
+
+  at vendor\laravel\framework\src\Illuminate\Database\Connection.php:822
+    818Γûò                     $this->getName(), $query, $this->prepareBindings($bindings), $e
+    819Γûò                 );
+    820Γûò             }
+    821Γûò 
+  Γ₧£ 822Γûò             throw new QueryException(
+    823Γûò                 $this->getName(), $query, $this->prepareBindings($bindings), $e
+    824Γûò             );
+    825Γûò         }
+    826Γûò     }
+
+  1   vendor\laravel\framework\src\Illuminate\Database\Connectors\Connector.php:66
+      PDOException::("SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it")
+
+  2   vendor\laravel\framework\src\Illuminate\Database\Connectors\Connector.php:66
+      PDO::__construct("mysql:host=127.0.0.1;port=3307;dbname=db_clarista", "root", Object(SensitiveParameterValue), [])
+

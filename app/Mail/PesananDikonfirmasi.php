@@ -12,9 +12,9 @@ class PesananDikonfirmasi extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public $pemesanan; // Variable untuk menampung data
+    public $pemesanan;
 
-    // Terima data pemesanan saat class ini dipanggil
+
     public function __construct(Pemesanan $pemesanan)
     {
         $this->pemesanan = $pemesanan;
@@ -30,7 +30,7 @@ class PesananDikonfirmasi extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.pesanan_confirmed', // Kita akan buat view ini nanti
+            view: 'emails.pesanan_confirmed',
         );
     }
 }

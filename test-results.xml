@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="D:\Xampp\htdocs\db-clarista\phpunit.xml" tests="26" assertions="48" errors="1" failures="0" skipped="0" time="1.542540">
+    <testsuite name="Feature" tests="26" assertions="48" errors="1" failures="0" skipped="0" time="1.542540">
+      <testsuite name="Tests\Feature\PemesananServiceTest" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" tests="26" assertions="48" errors="1" failures="0" skipped="0" time="1.542540">
+        <testcase name="service_can_cancel_booking_by_customer" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="115" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="5" time="0.547187"/>
+        <testcase name="service_can_cancel_booking_by_owner" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="140" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="4" time="0.034870"/>
+        <testcase name="service_can_cancel_booking_by_system" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="164" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="3" time="0.031933"/>
+        <testcase name="service_cancels_all_penempatan_kamars" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="191" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="5" time="0.032417"/>
+        <testcase name="service_cancels_penempatan_with_correct_actor" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="214" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.036844"/>
+        <testcase name="service_releases_promo_quota_on_cancel" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="229" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.036688"/>
+        <testcase name="service_does_not_change_promo_when_no_promo_used" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="255" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.032557"/>
+        <testcase name="service_sends_email_when_flag_is_true" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="286" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.033317"/>
+        <testcase name="service_does_not_send_email_when_flag_is_false" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="305" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.033821"/>
+        <testcase name="service_does_not_send_email_when_user_has_no_email" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="322" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="0" time="0.104399">
+          <error type="Illuminate\Database\QueryException">Tests\Feature\PemesananServiceTest::service_does_not_send_email_when_user_has_no_email&#13;
+Illuminate\Database\QueryException: SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: users.email (Connection: sqlite, SQL: insert into "users" ("name", "email", "email_verified_at", "password", "remember_token", "role_id", "no_hp", "gender", "id", "updated_at", "created_at") values (Dr. Breana Spinka MD, ?, 2026-02-19 01:24:55, $2y$04$95/ouaTCx7OCS0qu2YsSc.t6lqrVnTEb4Ht/oz5cmX5YokuBjZtIK, eT4QWRHwgo, 2, (269) 644-5582, wanita, 01khrzyzw67etkrrn4tnb7ggxb, 2026-02-19 01:24:55, 2026-02-19 01:24:55))
+&#13;
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Connection.php:822
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Connection.php:776
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Connection.php:557
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Connection.php:521
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Query\Builder.php:3736
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Builder.php:2205
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1384
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Model.php:1212
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Factories\Factory.php:351
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Collections\Traits\EnumeratesValues.php:271
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Factories\Factory.php:346
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Factories\Factory.php:302
+D:\Xampp\htdocs\db-clarista\vendor\laravel\framework\src\Illuminate\Database\Eloquent\Factories\Factory.php:296
+D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php:327</error>
+        </testcase>
+        <testcase name="service_returns_refreshed_pemesanan" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="345" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="2" time="0.029996"/>
+        <testcase name="service_cancels_booking_with_multiple_detail_pemesanans" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="361" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="2" time="0.034808"/>
+        <testcase name="api_customer_cancel_success" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="435" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="3" time="0.064866"/>
+        <testcase name="api_customer_cannot_cancel_others_booking" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="460" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="2" time="0.026902"/>
+        <testcase name="api_customer_cannot_cancel_confirmed_booking" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="483" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.027255"/>
+        <testcase name="api_customer_cannot_cancel_completed_booking" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="499" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.032847"/>
+        <testcase name="api_customer_cannot_cancel_already_cancelled_booking" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="515" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.034679"/>
+        <testcase name="api_owner_cancel_with_valid_reason" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="535" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="4" time="0.063023"/>
+        <testcase name="api_owner_cancel_requires_reason" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="565" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.033081"/>
+        <testcase name="api_owner_cancel_reason_min_10_chars" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="583" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.037760"/>
+        <testcase name="api_owner_cannot_cancel_completed_booking" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="601" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.037637"/>
+        <testcase name="api_owner_cannot_cancel_already_cancelled_booking" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="619" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.037747"/>
+        <testcase name="api_owner_can_cancel_pending_payment_booking" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="637" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="2" time="0.041865"/>
+        <testcase name="api_customer_cancel_releases_promo_quota" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="667" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.041548"/>
+        <testcase name="api_customer_cancel_updates_penempatan_status" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="700" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="2" time="0.039620"/>
+        <testcase name="api_unauthenticated_user_cannot_cancel" file="D:\Xampp\htdocs\db-clarista\tests\Feature\PemesananServiceTest.php" line="728" class="Tests\Feature\PemesananServiceTest" classname="Tests.Feature.PemesananServiceTest" assertions="1" time="0.034871"/>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

@@ -18,7 +18,7 @@ return new class extends Migration {
             $table->string('bank_tujuan', 25)->nullable(); // Bank asal transfer
             $table->string('nama_pengirim', 100)->nullable(); // Nama pengirim di bukti transfer
             $table->datetime('tanggal_bayar')->nullable(); // Tanggal transfer
-            $table->string('status_verifikasi', 25)->default('menunggu_verifikasi');
+            $table->string('status_verifikasi', 25)->default('menunggu_konfirmasi');
             $table->timestamps();
             $table->softDeletes();
         });

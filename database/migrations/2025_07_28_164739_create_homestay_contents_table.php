@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->string('alamat')->nullable();
             $table->string('telepon')->nullable();
             $table->string('email')->nullable();
-            $table->string('link_gmaps')->nullable();
+            $table->text('link_gmaps')->nullable();
         });
     }
 
