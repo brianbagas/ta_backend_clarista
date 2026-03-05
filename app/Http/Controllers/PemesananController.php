@@ -76,7 +76,7 @@ class PemesananController extends Controller
             $bookingPlan = [];
 
             foreach ($validated['kamars'] as $item) {
-                $kamar = Kamar::findOrFail($item['kamar_id']);
+                $kamar = Kamar::where('id_kamar', $item['kamar_id'])->lockForUpdate()->firstOrFail();
 
                 $availableUnits = $kamar->getAvailableUnits($checkIn, $checkOut, $item['jumlah_kamar'], true);
 
@@ -105,6 +105,7 @@ class PemesananController extends Controller
                     ->where('is_active', true)
                     ->where('berlaku_mulai', '<=', now())
                     ->where('berlaku_selesai', '>=', now())
+                    ->lockForUpdate()
                     ->first();
 
                 if ($promo) {
@@ -439,7 +440,8 @@ class PemesananController extends Controller
                 $bookingPlan = [];
 
                 foreach ($request->kamars as $item) {
-                    $kamar = Kamar::findOrFail($item['kamar_id']);
+                    // Lock row Kamar agar request concurrent menunggu giliran
+                    $kamar = Kamar::where('id_kamar', $item['kamar_id'])->lockForUpdate()->firstOrFail();
 
 
                     $availableUnits = $kamar->getAvailableUnits($checkInDate, $checkOutDate, $item['jumlah_kamar'], true);

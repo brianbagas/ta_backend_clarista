@@ -66,7 +66,7 @@ class HomestayContentController extends Controller
             'link_gmaps' => 'nullable|url',
             'hero_title' => 'nullable|string|max:255',
             'hero_subtitle' => 'nullable|string|max:255',
-            'hero_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validasi gambar
+            'hero_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048', // Validasi gambar
         ]);
 
         // Handle upload gambar

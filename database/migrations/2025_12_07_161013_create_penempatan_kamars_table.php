@@ -31,17 +31,13 @@ return new class extends Migration {
 
             $table->timestamps();
             $table->softDeletes();
-
-            // Constraints
-            // Jika detail pemesanan dihapus, record penempatan ikut hilang
-            // $table->foreign('detail_pemesanan_id')
-            //       ->references('id')->on('detail_pemesanans')
-            //       ->onDelete('cascade');
+            $table->unique(['kamar_unit_id', 'detail_pemesanan_id'], 'unique_unit_per_detail');
 
             // Unit tidak bisa dihapus jika masih ada penempatan yang merujuk padanya
             $table->foreign('kamar_unit_id')
                 ->references('id')->on('kamar_units')
                 ->onDelete('restrict');
+
         });
     }
 

@@ -70,7 +70,7 @@ class PaymentTest extends TestCase
                     'jumlah_bayar' => 1400000,
                     'bank_tujuan' => 'BCA',
                     'nama_pengirim' => 'Customer User',
-                    'tanggal_konfirmasi' => Carbon::today()->format('Y-m-d')
+                    'tanggal_konfirmasi' => Carbon::now()->format('Y-m-d')
                 ]);
 
         $response->assertStatus(200)
@@ -89,7 +89,9 @@ class PaymentTest extends TestCase
             'status_pemesanan' => 'menunggu_konfirmasi'
         ]);
 
-        Storage::assertExists('bukti_pembayaran/' . basename($file->hashName()));
+        $savedPath = Pembayaran::where('pemesanan_id', $this->pemesanan->id)
+            ->value('bukti_bayar_path');
+        Storage::disk('public')->assertExists($savedPath);
     }
 
     /** @test */
